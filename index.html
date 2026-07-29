@@ -1161,11 +1161,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
         const fullAddress = [data.region, data.city].filter(Boolean).join(' ')
           + ' (IP 기반 위치 — 실제 위치와 다를 수 있음, 정확한 GPS는 HTTPS 환경 필요)';
 
-        const locEl = document.getElementById('location');
-        if (locEl && !locEl.value) {
-          locEl.value = shortName;
-          generateImage();
-        }
+        // 국소명은 자동입력하지 않는다 (항상 직접 입력)
         loadWeatherData(lat, lon, statusEl, btn, shortName, fullAddress);
       })
       .catch(() => {
@@ -1252,11 +1248,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
       statusEl.style.color = '#555';
 
       reverseGeocode(lat, lon, (locationName, fullAddress) => {
-        const locEl = document.getElementById('location');
-        if (locEl && !locEl.value) {
-          locEl.value = locationName;
-          generateImage();
-        }
+        // 국소명은 자동입력하지 않는다 (항상 직접 입력)
         loadWeatherData(lat, lon, statusEl, btn, locationName, fullAddress);
       });
     };
