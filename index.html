@@ -105,6 +105,21 @@ summary {
   border-radius: 4px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
+
+.optional-field { display: none; }
+body.show-optional label.optional-field { display: flex; }
+body.show-optional details.optional-field { display: block; }
+#optional-toggle-row {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; margin-bottom:10px; padding:8px 10px;
+  background:#eef2f5; border-radius:5px; font-size:13px;
+}
+#optional-toggle-row label {
+  flex-direction:row; align-items:center; gap:6px;
+  margin-bottom:0; font-weight:normal; font-size:13px;
+  white-space:nowrap; cursor:pointer; display:flex;
+}
+#optional-count { color:#777; font-size:12px; }
 </style>
 </head>
 
@@ -114,12 +129,20 @@ summary {
 
 <div class="form">
 
+<div id="optional-toggle-row">
+  <label>
+    <input type="checkbox" id="optional-toggle" style="width:16px;height:16px;" onchange="toggleOptionalFields()">
+    추가 항목 보기
+  </label>
+  <span id="optional-count">도급사명 · 작업공종 · 건설장비 · 신호수 · 유도자 · 협력사 비상연락망</span>
+</div>
+
 <label>협력사명 <input type="text" id="son_company" value="SKO" oninput="generateImage()"></label>
-<label>도급사명 <input type="text" id="mother_company" oninput="generateImage()"></label>
+<label class="optional-field">도급사명 <input type="text" id="mother_company" oninput="generateImage()"></label>
 <label>시작시간 <input type="datetime-local" id="date" oninput="onStartDateChange()"></label>
 <label>종료시간 <input type="datetime-local" id="end_date" oninput="onEndDateChange()"></label>
 <label>국소명 <input type="text" id="location" oninput="generateImage()"></label>
-<label>작업공종 <input type="text" id="what_do" oninput="generateImage()"></label>
+<label class="optional-field">작업공종 <input type="text" id="what_do" oninput="generateImage()"></label>
 <label>투입인원
   <input type="text" id="inspector" oninput="onInspectorInput()" style="margin-top:5px;">
 </label>
@@ -196,7 +219,7 @@ summary {
 <label>체감온도 <input type="text" id="fake_temperature" oninput="onFakeTemperatureInput()"></label>
 <label>기온 <input type="text" id="real_temperature" oninput="generateImage()"></label>
 
-<details>
+<details class="optional-field">
   <summary>건설장비</summary>
   <div class="checkbox-group">
     <label><input type="checkbox" value="machine_crane" onchange="generateImage()"> 크레인</label>
@@ -215,9 +238,9 @@ summary {
   </div>
 </details>
 
-<label>신호수 이름 <input type="text" id="come_here" oninput="generateImage()"></label>
-<label>유도자 이름 <input type="text" id="whatch_me" oninput="generateImage()"></label>
-<label>협력사 비상연락망 <input type="text" id="company_sos" oninput="generateImage()"></label>
+<label class="optional-field">신호수 이름 <input type="text" id="come_here" oninput="generateImage()"></label>
+<label class="optional-field">유도자 이름 <input type="text" id="whatch_me" oninput="generateImage()"></label>
+<label class="optional-field">협력사 비상연락망 <input type="text" id="company_sos" oninput="generateImage()"></label>
 <label>도급사 관리감독자 비상연락망
   <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
     <input type="text" id="mother_company_sos" value="장진표 010-8963-1739" oninput="onMotherSosInput()" style="flex:1; margin-top:0;">
@@ -488,6 +511,20 @@ const IS_FILE_PROTOCOL = location.protocol === 'file:';
 const combinedCanvas = document.createElement('canvas');
 const combinedCtx = combinedCanvas.getContext('2d');
 
+
+// ── 자주 쓰지 않는 항목 표시/숨김 ──
+// 숨겨져 있어도 입력값은 그대로 결과 이미지에 반영된다.
+function toggleOptionalFields() {
+  const on = document.getElementById('optional-toggle').checked;
+  document.body.classList.toggle('show-optional', on);
+  localStorage.setItem('show_optional_fields', on ? '1' : '0');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const on = localStorage.getItem('show_optional_fields') === '1';
+  document.getElementById('optional-toggle').checked = on;
+  document.body.classList.toggle('show-optional', on);
+});
 
 function toggleEtc(cbId, wrapId) {
   const cb = document.getElementById(cbId);
@@ -1146,15 +1183,14 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
       .then(data => {
         const addr = data.address || {};
         const shortName = addr.city || addr.town || addr.county || addr.village || addr.state || '현재위치';
-        const fullAddress = [
-          addr.state,
-          addr.city || addr.county,
-          addr.city_district,
-          addr.borough,
-          addr.suburb || addr.town || addr.village,
-          addr.road,
-          addr.house_number
-        ].filter(Boolean).join(' ') || data.display_name || '현재위치';
+        // 도 / 시·군 / 구 / 동·읍·면 까지만 (도로명·번지는 제외)
+        const parts = [
+          addr.state,                                        // 도 · 특별시 · 광역시
+          addr.city || addr.county,                          // 시 · 군
+          addr.city_district || addr.borough,                // 구
+          addr.suburb || addr.town || addr.village           // 동 · 읍 · 면
+        ].filter(Boolean);
+        const fullAddress = parts.filter((v, i) => parts.indexOf(v) === i).join(' ') || '현재위치';
         callback(shortName, fullAddress);
       })
       .catch(() => callback('현재위치', '현재위치'));
@@ -1221,8 +1257,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
           locEl.value = locationName;
           generateImage();
         }
-        loadWeatherData(lat, lon, statusEl, btn, locationName,
-                        `${fullAddress} (GPS 오차 약 ${acc}m)`);
+        loadWeatherData(lat, lon, statusEl, btn, locationName, fullAddress);
       });
     };
 
@@ -1307,8 +1342,10 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     generateImage();
 
     const desc = descFn ? descFn(code) : getWeatherDesc(code);
+    const addrLine = fullAddress
+      ? `<div style="font-weight:bold;color:#0b6;margin-bottom:2px;">📍 ${fullAddress}</div>` : '';
     statusEl.innerHTML =
-      `${desc}, 기온 ${temp}°C, 체감 ${cappedApparent}°C, 풍속 ${wind}m/s`;
+      addrLine + `${desc}, 기온 ${temp}°C, 체감 ${cappedApparent}°C, 풍속 ${wind}m/s`;
     statusEl.style.color = '#28a745';
     btn.disabled = false;
     document.getElementById('weather_details').open = true;
