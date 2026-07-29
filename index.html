@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="위험성평가표">
+<title>현장 위험성 평가표 작성</title>
+
+<style>
+body {
+  font-family: -apple-system, sans-serif;
+  padding: 10px;
+  max-width: 480px;
+  margin: auto;
+  background-color: #f8f9fa;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
+/* 일반 입력 필드 레이아웃 */
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+/* 체크박스 전용 레이아웃*/
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 5px;
+}
+.checkbox-group label {
+  flex-direction: row; /* 체크박스와 글자를 가로로 */
+  align-items: center;
+  font-weight: normal;
+  cursor: pointer;
+  gap: 8px;
+}
+input[type="text"], input[type="date"], input[type="datetime-local"] {
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+details {
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+summary {
+  font-weight: bold;
+  cursor: pointer;
+  padding: 5px 0;
+}
+.etc-input {
+  display: none;
+  margin-top: 10px;
+  padding-left: 10px;
+  border-left: 3px solid #007bff;
+}
+.iphone-notice {
+  font-size: 12px;
+  color: #d9534f;
+  text-align: center;
+  margin: 10px 0;
+}
+.save-btn {
+  background-color: #007bff;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.hidden {
+  display: none;
+}
+#result-container {
+  margin-top: 20px;
+  width: 100%;
+  text-align: center;
+}
+#final-image {
+  width: 100%;
+  height: auto;
+  border: 2px solid #333;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+
+<body>
+
+<h2>현장 위험성 평가표 작성</h2>
+
+<div class="form">
+
+<label>협력사명 <input type="text" id="son_company" value="SKO" oninput="generateImage()"></label>
+<label>도급사명 <input type="text" id="mother_company" oninput="generateImage()"></label>
+<label>시작시간 <input type="datetime-local" id="date" oninput="onStartDateChange()"></label>
+<label>종료시간 <input type="datetime-local" id="end_date" oninput="onEndDateChange()"></label>
+<label>국소명 <input type="text" id="location" oninput="generateImage()"></label>
+<label>작업공종 <input type="text" id="what_do" oninput="generateImage()"></label>
+<label>투입인원
+  <input type="text" id="inspector" oninput="onInspectorInput()" style="margin-top:5px;">
+</label>
+
+<div id="details_work_env" style="border:1px solid #eee; padding:10px; border-radius:4px;">
+  <div style="font-weight:bold; font-size:14px; margin-bottom:8px;">작업장 환경</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_roof" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 건물(옥상)
+    </label>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_rooftop" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 건물(옥탑)
+    </label>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_pool" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 전주
+    </label>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_steel_tower" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 철탑
+    </label>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_strong_pool" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 강관주
+    </label>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_inbuilding" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 인빌딩(RF)
+    </label>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
+      <input type="checkbox" value="site_ect" id="site_ect_cb" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 기타
+    </label>
+  </div>
+  <div id="site_etc_wrap" class="etc-input">
+      <input type="text" id="site_ect_text" placeholder="작업장 특이사항" oninput="generateImage()">
+  </div>
+</div>
+
+<div id="signModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; justify-content:center; align-items:center;">
+  <div style="background:#fff;padding:10px;border-radius:8px;width:90%;max-width:400px;">
+    <p><b>서명 입력</b></p>
+    <canvas id="signCanvas" width="350" height="150" style="border:1px solid #333; touch-action:none;"></canvas>
+    <div style="margin-top:10px; display:flex; gap:5px;">
+      <button onclick="clearSign()">지우기</button>
+      <button onclick="saveSign()">확인</button>
+      <button onclick="closeSign()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+  <button onclick="openSign()" style="padding:10px; cursor:pointer;">서명 입력</button>
+  <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin-bottom:0; white-space:nowrap;">
+    <input type="checkbox" id="sign_autosave" style="width:16px;height:16px;" onchange="onSignAutoSaveToggle()"> 자동서명
+  </label>
+</div>
+
+<details id="weather_details">
+  <summary style="display:flex; align-items:center; justify-content:space-between;">
+    <span>기상 상태</span>
+    <button id="weather_fetch_btn" onclick="event.preventDefault(); event.stopPropagation(); fetchWeather();"
+      style="padding:4px 10px; font-size:12px; background:#17a2b8; color:white; border:none; border-radius:4px; cursor:pointer;">
+      날씨 자동입력
+    </button>
+  </summary>
+  <div id="weather_status" style="font-size:12px; color:#555; margin:6px 0 4px 0; min-height:16px;"></div>
+  <div style="font-size:11px; color:#999; margin:0 0 6px 0;">※ 모바일에서 파일을 직접 열면(file://) GPS가 차단되어 IP 기반 위치(부정확)로 대체됩니다. 정확한 GPS 위치가 필요하면 이 파일을 HTTPS 웹서버에 올려서 접속해야 합니다.</div>
+  <div class="checkbox-group">
+    <label><input type="checkbox" value="weather_clear" onchange="onWeatherChange(this)"> 맑음</label>
+    <label><input type="checkbox" value="weather_cloudy" onchange="onWeatherChange(this)"> 흐림</label>
+    <label><input type="checkbox" value="weather_wind" onchange="onWeatherChange(this)"> 강풍</label>
+    <label><input type="checkbox" value="weather_rain_or_snow" onchange="onWeatherChange(this)"> 비/눈</label>
+    <label><input type="checkbox" value="weather_hot" onchange="onWeatherChange(this)"> 폭염</label>
+    <label><input type="checkbox" value="weather_cold" onchange="onWeatherChange(this)"> 한파</label>
+  </div>
+</details>
+
+<label>체감온도 <input type="text" id="fake_temperature" oninput="onFakeTemperatureInput()"></label>
+<label>기온 <input type="text" id="real_temperature" oninput="generateImage()"></label>
+
+<details>
+  <summary>건설장비</summary>
+  <div class="checkbox-group">
+    <label><input type="checkbox" value="machine_crane" onchange="generateImage()"> 크레인</label>
+    <label><input type="checkbox" value="machine_sky" onchange="generateImage()"> 스카이</label>
+    <label><input type="checkbox" value="machine_sj" onchange="generateImage()"> 시저형 고소작업대</label>
+    <label><input type="checkbox" value="machine_labbercar" onchange="generateImage()"> 사다리차</label>
+    <label><input type="checkbox" value="machine_forklift" onchange="generateImage()"> 지게차</label>
+    <label><input type="checkbox" value="machine_dumptruck" onchange="generateImage()"> 덤프트럭</label>
+    <label><input type="checkbox" value="machine_excavator" onchange="generateImage()"> 굴착기</label>
+    <label><input type="checkbox" value="machine_pumpcar" onchange="generateImage()"> 펌프카</label>
+    <label><input type="checkbox" value="machine_mixtruck" onchange="generateImage()"> 믹서트럭</label>
+    <label><input type="checkbox" id="machine_ect_cb" value="machine_ect" onchange="toggleEtc('machine_ect_cb','machine_etc_wrap')"> 기타</label>
+  </div>
+  <div id="machine_etc_wrap" class="etc-input">
+    <input type="text" id="machine_ect_text" placeholder="기타 장비 입력" oninput="generateImage()">
+  </div>
+</details>
+
+<label>신호수 이름 <input type="text" id="come_here" oninput="generateImage()"></label>
+<label>유도자 이름 <input type="text" id="whatch_me" oninput="generateImage()"></label>
+<label>협력사 비상연락망 <input type="text" id="company_sos" oninput="generateImage()"></label>
+<label>도급사 관리감독자 비상연락망
+  <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+    <input type="text" id="mother_company_sos" value="장진표 010-8963-1739" oninput="onMotherSosInput()" style="flex:1; margin-top:0;">
+    <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin-bottom:0; white-space:nowrap;">
+      <input type="checkbox" id="mother_sos_autosave" style="width:16px;height:16px;" onchange="onMotherSosAutoSaveToggle()"> 자동저장
+    </label>
+  </div>
+</label>
+
+<details id="details_site_char">
+  <summary>현장 특성</summary>
+  <div class="checkbox-group">
+    <label><input type="checkbox" value="site_road_outside" onchange="onSiteCharChange(this)"> 도로 가장 차선</label>
+    <label><input type="checkbox" value="site_road_inside" onchange="onSiteCharChange(this)"> 도로 중앙 차선 (사이 지선, 교차로 포함)</label>
+    <label><input type="checkbox" value="site_road_narrow" onchange="onSiteCharChange(this)"> 골목길/농로/비포장</label>
+    <label><input type="checkbox" value="site_inside" onchange="onSiteCharChange(this)"> 구내 (건물 안)</label>
+    <label><input type="checkbox" value="site_rooftop_combo" onchange="onSiteCharChange(this)"> 옥상/옥탑</label>
+    <label><input type="checkbox" value="site_river" onchange="onSiteCharChange(this)"> 하천 하월 구간</label>
+    <label><input type="checkbox" value="site_manhole" onchange="onSiteCharChange(this)"> 맨홀(수공/인공)내 작업</label>
+    <label><input type="checkbox" value="site_near_voltage" onchange="onSiteCharChange(this)"> 전력선/변압기 근접</label>
+    <label><input type="checkbox" value="site_weak_ground" onchange="onSiteCharChange(this)"> 연약지반/비탈면(낙석위험 구간)</label>
+    <label><input type="checkbox" value="site_pipe_work" onchange="onSiteCharChange(this)"> 관로작업 구간</label>
+    <label><input type="checkbox" value="site_traffic_accident" onchange="onSiteCharChange(this)"> 교통사고 다발지역(TAAS)</label>
+    <label><input type="checkbox" value="site_bridge" onchange="onSiteCharChange(this)"> 교량/지하차도/터널</label>
+  </div>
+  <div style="margin-top:8px;">
+    <label style="font-weight:bold; font-size:13px;">현장 특이 사항
+      <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+        <input type="text" id="site_site_ect_text" placeholder="현장 특이사항 입력" oninput="onSiteEctInput()" style="flex:1; margin-top:0;">
+        <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin-bottom:0; white-space:nowrap;">
+          <input type="checkbox" id="site_ect_autosave" style="width:16px;height:16px;" onchange="onSiteEctAutoSaveToggle()"> 자동저장
+        </label>
+      </div>
+    </label>
+  </div>
+</details>
+
+<details>
+  <summary>공통사항</summary>
+  <div class="checkbox-group">
+    <label><input type="checkbox" value="common_equipment" checked onchange="generateImage()"> 개인보호구 착용 확인</label>
+    <label><input type="checkbox" value="common_machine" onchange="generateImage()"> 건설장비 안전장치 확인</label>
+    <label><input type="checkbox" value="common_health" checked onchange="generateImage()"> 팀원 건강상태 확인</label>
+    <label><input type="checkbox" value="common_tool" checked onchange="generateImage()"> 공도구 사용 전 점검</label>
+    <label><input type="checkbox" value="common_stop_work" checked onchange="generateImage()"> 작업중지 기준 준수</label>
+    <label><input type="checkbox" value="common_danger" checked onchange="generateImage()"> 유해 위험요인 확인</label>
+    <label><input type="checkbox" value="common_heavy" onchange="generateImage()"> 중량물 취급 사항 확인</label>
+  </div>
+</details>
+
+<details>
+  <summary style="display:flex; align-items:center; justify-content:space-between;">
+    <span>혹서기 용품 지참유무</span>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin:0; white-space:nowrap;" onclick="event.stopPropagation()">
+      <input type="checkbox" id="hot_autosave" style="width:16px;height:16px;" onchange="onHotAutoSaveToggle()"> 자동저장
+    </label>
+  </summary>
+  <div class="checkbox-group">
+    <label><input type="checkbox" id="hot_thermometer" value="hot_thermometer" onchange="onHotChange()"> 온습도계</label>
+    <label><input type="checkbox" id="hot_water" value="hot_water" onchange="onHotChange()"> 얼음물</label>
+    <label><input type="checkbox" id="hot_icebox" value="hot_icebox" onchange="onHotChange()"> 아이스박스</label>
+    <label><input type="checkbox" id="hot_candy" value="hot_candy" onchange="onHotChange()"> 식엽정</label>
+    <label><input type="checkbox" id="hot_rest" value="hot_rest" onchange="onHotChange()"> 휴게시설</label>
+    <label><input type="checkbox" value="hot_ect" id="hot_ect_cb" onchange="toggleEtc('hot_ect_cb', 'hot_etc_wrap'); onHotChange()"> 기타</label>
+  </div>
+  <div id="hot_etc_wrap" class="etc-input">
+      <input type="text" id="hot_ect_text" placeholder="혹서기 기타 사항" oninput="onHotChange()">
+  </div>
+</details>
+
+<details>
+  <summary style="display:flex; align-items:center; justify-content:space-between;">
+    <span>혹한기 용품 지참유무</span>
+    <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin:0; white-space:nowrap;" onclick="event.stopPropagation()">
+      <input type="checkbox" id="cold_autosave" style="width:16px;height:16px;" onchange="onColdAutoSaveToggle()"> 자동저장
+    </label>
+  </summary>
+  <div class="checkbox-group">
+    <label><input type="checkbox" id="cold_warmer" value="cold_warmer" onchange="onColdChange()"> 핫팩</label>
+    <label><input type="checkbox" id="cold_cloth" value="cold_cloth" onchange="onColdChange()"> 발열조끼</label>
+    <label><input type="checkbox" value="cold_ect" id="cold_ect_cb" onchange="toggleEtc('cold_ect_cb', 'cold_etc_wrap'); onColdChange()"> 기타</label>
+  </div>
+  <div id="cold_etc_wrap" class="etc-input">
+      <input type="text" id="cold_ect_text" placeholder="혹한기 기타 사항" oninput="onColdChange()">
+  </div>
+</details>
+
+<label>추가 위험요인 및 대책
+  <input type="text" id="danger_ect_point" placeholder="위험요인" oninput="onDangerInput()">
+  <input type="text" id="danger_ect_todo" placeholder="대책" oninput="onDangerInput()">
+</label>
+
+
+
+<details id="details_risk">
+  <summary>위험 요인</summary>
+    <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_fall" onchange="toggleChildrenVisible(this, 'risk_fall_group')"> 떨어짐
+      </label>
+
+      <div class="checkbox-group risk_fall_group">
+        <label><input type="checkbox" value="risk_fall_1" onchange="generateImage()"> 전주 균열/전주 수직상태 확인</label>
+        <label><input type="checkbox" value="risk_fall_2" onchange="generateImage()"> 수직사다리 고정상태 확인 및 수직 생명줄 또는 안전블록 설치</label>
+        <label><input type="checkbox" value="risk_fall_3" onchange="generateImage()"> 난간없는 옥상/옥탑/경사지붕 수평생명줄 또는 안전블록 설치</label>
+        <label><input type="checkbox" value="risk_fall_4" onchange="generateImage()"> 고소작업 시 안전고리 채결 및 경간 이동 시 이중 안전고리 교차체결</label>
+      </div>
+    </div>
+    <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_fall_ladder" onchange="toggleChildrenVisible(this, 'risk_fall_ladder_group')"> 떨어짐(사다리)
+      </label>
+
+    <div class="checkbox-group risk_fall_ladder_group">
+      <label><input type="checkbox" value="risk_fall_ladder_1" onchange="generateImage()"> 사다리 상부 고정 및 아웃트리거 설치</label>
+      <label><input type="checkbox" value="risk_fall_ladder_2" onchange="generateImage()"> 사다리 안전작업 지침 준수</label>
+      <label><input type="checkbox" value="risk_fall_ladder_3" onchange="generateImage()"> 사다리 작업중 가로질러 넘어가는 과정에서 안전대 체결</label>
+    </div>
+  </div>
+  <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_fall_ladder_width" onchange="toggleChildrenVisible(this, 'risk_fall_ladder_width_group')"> 사다리 가로서기
+    </label>
+
+    <div class="checkbox-group risk_fall_ladder_width_group">
+      <label><input type="checkbox" value="risk_fall_ladder_width_1" onchange="generateImage()"> 사다리 상부 고정 및 아웃트리거 설치</label>
+      <label><input type="checkbox" value="risk_fall_ladder_width_2" onchange="generateImage()"> 사다리 안전작업 지침 준수</label>
+      <label><input type="checkbox" value="risk_fall_ladder_width_3" onchange="generateImage()"> 사다리 작업중 가로질러 넘어가는 과정에서 안전대 체결</label>
+    </div>
+  </div>
+    <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_car_crush" onchange="toggleChildrenVisible(this, 'risk_car_crush_group')"> 교통사고
+    </label>
+
+    <div class="checkbox-group risk_car_crush_group">
+      <label><input type="checkbox" value="risk_car_crush_1" onchange="generateImage()"> 안전시설물 설치 또는 차단 전문업체 활용</label>
+      <label><input type="checkbox" value="risk_car_crush_2" onchange="generateImage()"> 신호수 배치 및 신호체계 확인</label>
+    </div>
+  </div>
+  <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_heavy_machine" onchange="toggleChildrenVisible(this, 'risk_heavy_machine_group')"> 장비 부딪힘/끼임
+    </label>
+
+    <div class="checkbox-group risk_heavy_machine_group">
+      <label><input type="checkbox" value="risk_heavy_machine_1" onchange="generateImage()"> 장비 유도자 배치 및 운전원과 신호체계 확인</label>
+      <label><input type="checkbox" value="risk_heavy_machine_2" onchange="generateImage()"> 작업반경 내 접근금지</label>
+    </div>
+  </div>
+    <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_car_fall" onchange="toggleChildrenVisible(this, 'risk_car_fall_group')"> 넘어짐(인력/건설장비)
+    </label>
+
+    <div class="checkbox-group risk_car_fall_group">
+      <label><input type="checkbox" value="risk_car_fall_1" onchange="generateImage()"> 이동통로 정리정돈, 결빙/물기 제거</label>
+      <label><input type="checkbox" value="risk_car_fall_2" onchange="generateImage()"> 작업 전 지반상태 확인</label>
+      <label><input type="checkbox" value="risk_car_fall_3" onchange="generateImage()"> 건설장비는 허용된 제원 내 운행</label>
+      <label><input type="checkbox" value="risk_car_fall_4" onchange="generateImage()"> 아웃트리거 수평인출 및 받침대 설치</label>
+      <label><input type="checkbox" value="risk_car_fall_5" onchange="generateImage()"> 작업차량 고임목 설치</label>
+    </div>
+  </div>
+  <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_electric" onchange="toggleChildrenVisible(this, 'risk_electric_group')"> 감전
+    </label>
+
+    <div class="checkbox-group risk_electric_group">
+      <label><input type="checkbox" value="risk_electric_1" onchange="generateImage()"> 감전위험에 노출된 환경 작업전 검전기로 누설전류 확인</label>
+      <label><input type="checkbox" value="risk_electric_2" onchange="generateImage()"> 특고압 3m 이상 이격 확인</label>
+      <label><input type="checkbox" value="risk_electric_3" onchange="generateImage()"> 노출형 변압기 휀스 내 접근금지</label>
+    </div>
+  </div>
+  <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_drop" onchange="toggleChildrenVisible(this, 'risk_drop_group')"> 낙하물 발생
+    </label>
+
+    <div class="checkbox-group risk_drop_group">
+      <label><input type="checkbox" value="risk_drop_1" onchange="generateImage()"> 작업반경 내 또는 상부작업 시 직하단 접근금지</label>
+      <label><input type="checkbox" value="risk_drop_2" onchange="generateImage()"> 승인된 인양도구 사용슬링밸트, 와이어, 샤클 등</label>
+      <label><input type="checkbox" value="risk_drop_3" onchange="generateImage()"> 장비 설치 시 낙하물 방지망/삼각틀/도르래 등 설치</label>
+      <label><input type="checkbox" value="risk_drop_4" onchange="generateImage()"> 공구 이탈방지 죔줄 사용</label>
+    </div>
+  </div>
+  <div class="parent-group">
+      <label>
+        <input type="checkbox" value="risk_boom" onchange="toggleChildrenVisible(this, 'risk_boom_group')"> 낙하물 발생
+    </label>
+
+    <div class="checkbox-group risk_boom_group">
+      <label><input type="checkbox" value="risk_boom_1" onchange="generateImage()"> 화기작업 주변 인화물 제거, 소화기 비치</label>
+      <label><input type="checkbox" value="risk_boom_2" onchange="generateImage()"> 불티 발생 작업 시 불티비산방지포 사용</label>
+      <label><input type="checkbox" value="risk_boom_3" onchange="generateImage()"> 작업 중 흡연금지</label>
+    </div>
+  </div>
+</details>
+
+
+<p class="iphone-notice">아이폰은 아래 이미지를 길게 눌러 저장하세요.</p>
+<button class="save-btn" onclick="saveImage()">이미지 저장</button>
+
+</div>
+
+<canvas id="canvas" style="display:none;" width="1666" height="2451"></canvas>
+
+<div id="img-status" style="display:none;margin:8px 0;padding:10px;border-radius:6px;font-size:14px;font-weight:bold;text-align:center;"></div>
+<div id="result-container">
+  <img id="final-image" src="" alt="결과 이미지">
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const finalImg = document.getElementById("final-image");
+
+// ── 3장 합성용 이미지 ──
+// 파일 위치를 두 가지로 시도한다:
+//   1) assets/xxx.webp  (폴더 구조로 올린 경우)
+//   2) xxx.webp         (index.html과 같은 폴더에 평평하게 둔 경우)
+const templateImage = new Image();
+const warningImage  = new Image();
+const sideImage     = new Image();
+
+const REQUIRED_IMAGES = [
+  { img: templateImage, name: 'template.webp', label: '양식지' },
+  { img: warningImage,  name: 'warning.webp',  label: '경고문' },
+  { img: sideImage,     name: 'side.webp',     label: '참고자료' }
+];
+let imageLoadFailed = [];
+
+function allImagesReady() {
+  return REQUIRED_IMAGES.every(o => o.img.complete && o.img.naturalWidth > 0);
+}
+
+function setImgStatus(msg, kind) {
+  const el = document.getElementById('img-status');
+  if (!el) return;
+  if (!msg) { el.style.display = 'none'; return; }
+  el.innerHTML = msg;
+  el.style.display = 'block';
+  el.style.background = kind === 'error' ? '#f8d7da' : '#e2e3e5';
+  el.style.color      = kind === 'error' ? '#a02020' : '#555';
+}
+
+REQUIRED_IMAGES.forEach(o => {
+  o.tries = ['assets/' + o.name, o.name];   // 시도할 경로 목록
+  o.step  = 0;
+  o.img.onload  = () => generateImage();
+  o.img.onerror = () => {
+    o.step++;
+    if (o.step < o.tries.length) {           // 다음 경로로 재시도
+      o.img.src = o.tries[o.step];
+      return;
+    }
+    if (!imageLoadFailed.includes(o.label)) imageLoadFailed.push(o.label);
+    setImgStatus('⚠ 이미지 파일을 찾을 수 없습니다: ' + imageLoadFailed.join(', ') +
+                 '<br>' + REQUIRED_IMAGES.map(r => r.name).join(', ') +
+                 ' 파일이 index.html과 같은 폴더(또는 assets 폴더)에 있는지 확인하세요.', 'error');
+  };
+  o.img.src = o.tries[0];
+});
+
+// file:// 로 직접 열면 브라우저가 캔버스를 잠가 이미지 저장이 막힌다
+const IS_FILE_PROTOCOL = location.protocol === 'file:';
+
+const combinedCanvas = document.createElement('canvas');
+const combinedCtx = combinedCanvas.getContext('2d');
+
+
+function toggleEtc(cbId, wrapId) {
+  const cb = document.getElementById(cbId);
+  const wrap = document.getElementById(wrapId);
+  wrap.style.display = cb.checked ? "block" : "none";
+  if (!cb.checked) wrap.querySelector("input").value = "";
+  generateImage();
+}
+
+function drawTextAuto(text, x, y, maxWidth, maxFont) {
+  if (!text) return;
+  let size = maxFont;
+  ctx.font = `${size}px sans-serif`;
+  while (ctx.measureText(text).width > maxWidth && size > 10) {
+    size--;
+    ctx.font = `${size}px sans-serif`;
+  }
+  ctx.fillStyle = "black";
+  ctx.fillText(text, x, y);
+}
+
+const checkPositions = {
+  weather_clear: { x: 280, y: 492 }, weather_wind: { x: 375, y: 492 }, weather_rain_or_snow: { x: 470, y: 492 }, weather_hot: { x: 575, y: 492 }, weather_cold: { x: 670, y: 492 },
+  machine_crane: { x: 280, y: 545 }, machine_sky: { x: 500, y: 545 }, machine_sj: { x: 623, y: 545 }, machine_labbercar: { x: 850, y: 545 }, machine_forklift: { x: 985, y: 545 }, machine_dumptruck: { x: 280, y: 575 }, machine_excavator: { x: 415, y: 575 }, machine_pumpcar: { x: 538, y:575 }, machine_mixtruck: { x: 660, y: 575 }, machine_ect: { x: 795, y: 575 },
+  site_road_outside: { x: 285, y: 780 }, site_road_inside: { x: 285, y: 810 }, site_road_narrow: { x: 285, y: 840 }, site_inside: { x: 285, y: 870 }, site_rooftop_combo: { x: 720, y: 780 }, site_river: { x: 720, y: 810 }, site_manhole: { x: 720, y: 840 }, site_near_voltage: { x: 720, y: 870 }, site_weak_ground: { x: 1155, y: 780 }, site_pipe_work: { x: 1155, y: 810 }, site_traffic_accident: { x: 1155, y: 840 }, site_bridge: { x: 1155, y: 870 },
+  common_equipment: { x: 285, y: 1000 }, common_machine: { x: 285, y: 1030 }, common_health: { x: 285, y: 1060 }, common_tool: { x: 285, y: 1090 }, common_stop_work: { x: 285, y: 1120 }, common_danger: { x: 285, y: 1150 }, common_heavy: { x: 285, y: 1180 },
+  hot_thermometer: { x: 976, y: 1015 }, hot_water: { x: 976, y: 1045 }, hot_icebox: { x: 976, y: 1075 }, hot_candy: { x: 976, y: 1105 }, hot_rest: { x: 976, y: 1135 }, hot_ect: { x: 976, y: 1165 },
+  cold_warmer: { x: 1360, y: 1030 }, cold_cloth: { x: 1360, y: 1060 }, cold_ect: { x: 1360, y: 1090 },
+  site_roof: { x: 100, y: 1807 }, site_rooftop: { x: 100, y: 1867 }, site_pool: { x: 100, y: 1927 }, site_steel_tower: { x: 100, y: 1987 }, site_strong_pool: { x: 100, y: 2047 }, site_inbuilding: { x: 100, y: 2107 }, site_ect: { x: 100, y: 2167 },
+  risk_fall: { x: 285, y: 1440 }, risk_fall_ladder: { x: 285, y: 1550 }, risk_fall_ladder_width: { x: 315, y: 1580 }, risk_car_crush: { x: 285, y: 1665 }, risk_heavy_machine: { x: 285, y: 1750 }, risk_car_fall: { x: 285, y: 1875 }, risk_electric: { x: 285, y: 2015 }, risk_drop: { x: 285, y: 2140 }, risk_boom: { x: 285, y: 2265 },
+  risk_fall_1:{ x: 850, y: 1397 }, risk_fall_2:{ x: 850, y: 1430 }, risk_fall_3:{ x: 850, y: 1458 }, risk_fall_4:{ x: 850, y: 1487 },
+  risk_fall_ladder_1:{ x: 850, y: 1536 }, risk_fall_ladder_2:{ x: 850, y: 1568 }, risk_fall_ladder_3:{ x: 850, y: 1600 }, 
+  risk_fall_ladder_width_1:{ x: 850, y: 1536 }, risk_fall_ladder_width_2:{ x: 850, y: 1568 }, risk_fall_ladder_width_3:{ x: 850, y: 1600 }, 
+  risk_car_crush_1:{ x: 850, y: 1652 }, risk_car_crush_2:{ x: 850, y: 1682 }, risk_heavy_machine_1:{ x: 850, y: 1734 }, risk_heavy_machine_2:{ x: 850, y: 1765 }, 
+  risk_car_fall_1:{ x: 850, y: 1815 }, risk_car_fall_2:{ x: 850, y: 1845 },risk_car_fall_3:{ x: 850, y: 1875 }, risk_car_fall_4:{ x: 850, y: 1905 },risk_car_fall_5:{ x: 850, y: 1935 }, 
+  risk_electric_1: { x: 850, y: 1985 }, risk_electric_2: { x: 850, y: 2015 }, risk_electric_3: { x: 850, y: 2045 }, 
+  risk_drop_1: { x: 850, y: 2095 }, risk_drop_2: { x: 850, y: 2125 }, risk_drop_3: { x: 850, y: 2155 }, risk_drop_4: { x: 850, y: 2185 }, 
+  risk_boom_1: { x: 850, y: 2235 }, risk_boom_2: { x: 850, y: 2265 }, risk_boom_3: { x: 850, y: 2295 },
+};
+
+let _generateImageTimer = null;
+function generateImage() {
+  clearTimeout(_generateImageTimer);
+  _generateImageTimer = setTimeout(_doGenerateImage, 300);
+}
+function _doGenerateImage() {
+  if (imageLoadFailed.length) return;          // 로딩 실패 → 결과 생성 중단
+  if (!allImagesReady()) {                     // 3장이 다 와야 합성 시작
+    setImgStatus('이미지 불러오는 중...', 'info');
+    return;
+  }
+  setImgStatus('', null);
+  canvas.width = templateImage.width;
+  canvas.height = templateImage.height;
+  ctx.drawImage(templateImage, 0, 0);
+
+  drawTextAuto(document.getElementById("son_company").value, 290, 210, 100, 24);
+  drawTextAuto(document.getElementById("mother_company").value, 655, 210, 155, 24);
+  drawTextAuto(getDisplayDateTime(), 1140, 210, 330, 24);
+  drawTextAuto(getDisplayEndTime(), 1140, 240, 330, 24);
+  drawTextAuto(document.getElementById("location").value, 290, 280, 490, 24);
+  drawTextAuto(document.getElementById("what_do").value, 1140, 280, 330, 24);
+  drawTextAuto(document.getElementById("inspector").value, 290, 385, 1250, 26);
+  drawTextAuto(document.getElementById("fake_temperature").value, 950, 497, 100, 24);
+  drawTextAuto(document.getElementById("real_temperature").value, 1295, 497, 100, 24);
+  drawTextAuto(document.getElementById("come_here").value, 1290, 560, 280, 24);
+  drawTextAuto(document.getElementById("whatch_me").value, 1290, 625, 280, 24);
+  drawTextAuto(document.getElementById("company_sos").value, 290, 685, 510, 24);
+  drawTextAuto(document.getElementById("mother_company_sos").value, 1040, 685, 510, 24);
+  drawTextAuto(document.getElementById("danger_ect_point").value, 290, 1305, 310, 24);
+  drawTextAuto(document.getElementById("danger_ect_todo").value, 840, 1305, 725, 24);
+
+  drawTextAuto(document.getElementById("machine_ect_text").value, 870, 575, 155, 20);
+  drawTextAuto(document.getElementById("site_site_ect_text").value, 290, 945, 1100, 20);
+  drawTextAuto(document.getElementById("hot_ect_text").value, 1050, 1165, 120, 20);
+  drawTextAuto(document.getElementById("cold_ect_text").value, 1430, 1090, 120, 20);
+  drawTextAuto(document.getElementById("site_ect_text").value, 170, 2165, 50, 20);
+
+  if (signImage) {
+    ctx.drawImage(signImage, 1100, 340, 470, 100);
+  }
+
+  document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb=>{
+    const p = checkPositions[cb.value];
+    if(p){
+      ctx.font="bold 30px sans-serif";
+      ctx.fillStyle="blue";
+      ctx.fillText("✔",p.x,p.y);
+    }
+  });
+
+  // 흐림: 템플릿에 칸이 없으므로 박스·텍스트를 직접 그림
+  // 기존 날씨 체크 Y=492 에 맞춰 박스와 텍스트 베이스라인 통일
+  const CLOUDY_CX = 755, CLOUDY_CY = 492;
+  ctx.save();
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(CLOUDY_CX - 2, CLOUDY_CY - 9, 15, 15);
+  ctx.font = 'bold 19px sans-serif';
+  ctx.fillStyle = 'black';
+  ctx.fillText('흐림', CLOUDY_CX + 16, CLOUDY_CY + 5);
+  const cloudyCb = document.querySelector('input[value="weather_cloudy"]');
+  if (cloudyCb && cloudyCb.checked) {
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = 'blue';
+    ctx.fillText('✔', CLOUDY_CX, CLOUDY_CY);
+  }
+  ctx.restore();
+
+  const sideH = canvas.height;
+  const gap = 20;
+  const hasSide = sideImage.complete && sideImage.naturalWidth > 0;
+  const hasWarning = warningImage.complete && warningImage.naturalWidth > 0;
+  const sideW = hasSide ? Math.round(sideImage.width * (sideH / sideImage.height)) : 0;
+  const warnW = hasWarning ? Math.round(warningImage.width * (sideH / warningImage.height)) : 0;
+  if (hasSide || hasWarning) {
+    combinedCanvas.width = (hasWarning ? warnW + gap : 0) + canvas.width + (hasSide ? gap + sideW : 0);
+    combinedCanvas.height = sideH;
+    combinedCtx.fillStyle = 'white';
+    combinedCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+    let xOffset = 0;
+    if (hasWarning) {
+      combinedCtx.drawImage(warningImage, xOffset, 0, warnW, sideH);
+      xOffset += warnW + gap;
+    }
+    combinedCtx.drawImage(canvas, xOffset, 0);
+    xOffset += canvas.width;
+    if (hasSide) {
+      combinedCtx.drawImage(sideImage, xOffset + gap, 0, sideW, sideH);
+    }
+    try {
+      finalImg.src = combinedCanvas.toDataURL("image/png");
+    } catch (e) { reportCanvasLocked(); }
+  } else {
+    try {
+      finalImg.src = canvas.toDataURL("image/png");
+    } catch (e) { reportCanvasLocked(); }
+  }
+}
+
+function reportCanvasLocked() {
+  setImgStatus(IS_FILE_PROTOCOL
+    ? '⚠ 파일을 직접 열어서(file://) 이미지 생성이 차단됐습니다.<br>'
+      + 'GitHub Pages 등 웹 주소(http/https)로 접속해야 저장이 됩니다.'
+    : '⚠ 이미지 생성이 차단됐습니다. 이미지 파일이 같은 사이트에 있는지 확인하세요.', 'error');
+}
+
+function saveImage() {
+  if (imageLoadFailed.length) {
+    alert('이미지 파일을 불러오지 못했습니다.\n\n'
+        + 'template.webp, warning.webp, side.webp 파일이\n'
+        + 'index.html과 같은 폴더(또는 assets 폴더)에 있는지 확인하세요.');
+    return;
+  }
+  if (!allImagesReady()) {
+    alert('이미지를 아직 불러오는 중입니다. 잠시 후 다시 눌러 주세요.');
+    return;
+  }
+  const a = document.createElement("a");
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const filename = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  a.download = `${filename}.jpg`;
+  const srcCanvas = combinedCanvas.width > 0 ? combinedCanvas : canvas;
+  try {
+    a.href = srcCanvas.toDataURL("image/jpeg", 0.7);
+  } catch (e) {
+    reportCanvasLocked();
+    alert(IS_FILE_PROTOCOL
+      ? '파일을 직접 열어서(file://) 저장이 차단됐습니다.\n\n'
+        + 'GitHub Pages 주소로 접속하면 정상 저장됩니다.'
+      : '이미지 저장이 차단됐습니다.');
+    return;
+  }
+  a.click();
+}
+
+const signCanvas = document.getElementById("signCanvas");
+const signCtx = signCanvas.getContext("2d");
+let drawing = false;
+let signImage = null;
+
+function getPos(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function startDraw(e) {
+  drawing = true;
+  const p = getPos(e, signCanvas);
+  signCtx.beginPath();
+  signCtx.moveTo(p.x, p.y);
+}
+function draw(e) {
+  if (!drawing) return;
+  const p = getPos(e, signCanvas);
+  signCtx.lineTo(p.x, p.y);
+  signCtx.stroke();
+}
+function endDraw() { drawing = false; }
+
+signCtx.lineWidth = 2;
+signCtx.lineCap = "round";
+signCanvas.addEventListener("mousedown", startDraw);
+signCanvas.addEventListener("mousemove", draw);
+signCanvas.addEventListener("mouseup", endDraw);
+signCanvas.addEventListener("mouseleave", endDraw);
+signCanvas.addEventListener("touchstart", startDraw);
+signCanvas.addEventListener("touchmove", draw);
+signCanvas.addEventListener("touchend", endDraw);
+
+function openSign() { document.getElementById("signModal").style.display = "flex"; }
+function closeSign() { document.getElementById("signModal").style.display = "none"; }
+function clearSign() { signCtx.clearRect(0, 0, signCanvas.width, signCanvas.height); }
+
+function saveSign() {
+  const dataURL = signCanvas.toDataURL("image/png");
+  signImage = new Image();
+  signImage.onload = () => generateImage();
+  signImage.src = dataURL;
+  if (document.getElementById('sign_autosave').checked) {
+    localStorage.setItem('sign_data', dataURL);
+  }
+  closeSign();
+}
+
+function loadSavedSign() {
+  const saved = localStorage.getItem('sign_data');
+  if (!saved) return;
+  const img = new Image();
+  img.onload = () => {
+    signCtx.clearRect(0, 0, signCanvas.width, signCanvas.height);
+    signCtx.drawImage(img, 0, 0);
+    signImage = new Image();
+    signImage.onload = () => generateImage();
+    signImage.src = saved;
+  };
+  img.src = saved;
+}
+
+function onSignAutoSaveToggle() {
+  const cb = document.getElementById('sign_autosave');
+  if (cb.checked) {
+    localStorage.setItem('sign_autosave', 'true');
+  } else {
+    localStorage.removeItem('sign_autosave');
+    localStorage.removeItem('sign_data');
+  }
+}
+function toDatetimeLocal(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  }
+
+  function setCurrentDateTime() {
+    const now = new Date();
+    const dateInput = document.getElementById('date');
+    if (dateInput) dateInput.value = toDatetimeLocal(now);
+    setEndDateFromStart();
+    if (typeof generateImage === "function") generateImage();
+  }
+
+  function setEndDateFromStart() {
+    const startVal = document.getElementById('date')?.value;
+    if (!startVal) return;
+    const startDate = new Date(startVal);
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+    const endInput = document.getElementById('end_date');
+    if (endInput) endInput.value = toDatetimeLocal(endDate);
+  }
+
+  function onStartDateChange() {
+    setEndDateFromStart();
+    generateImage();
+  }
+
+  function onEndDateChange() {
+    const startVal = document.getElementById('date')?.value;
+    const endInput = document.getElementById('end_date');
+    if (startVal && endInput.value) {
+      const startDate = new Date(startVal);
+      const endDate = new Date(endInput.value);
+      const maxEnd = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+      if (endDate > maxEnd) endInput.value = toDatetimeLocal(maxEnd);
+    }
+    generateImage();
+  }
+
+  function getDisplayDateTime() {
+    const val = document.getElementById('date')?.value;
+    if (!val) return '';
+    return '시작시간 : ' + val.replace('T', ' ');
+  }
+
+  function getDisplayEndTime() {
+    const val = document.getElementById('end_date')?.value;
+    if (!val) return '';
+    return '종료시간 : ' + val.replace('T', ' ');
+  }
+
+  // 페이지 로드 시 자동 실행
+  window.addEventListener('DOMContentLoaded', () => {
+    setCurrentDateTime();
+    fetchWeather();
+  });
+
+  // 투입인원 자동저장 (상시)
+  function onInspectorInput() {
+    localStorage.setItem('inspector_value', document.getElementById('inspector').value);
+    generateImage();
+  }
+
+  // 추가 위험요인 및 대책 자동저장 (상시)
+  function onDangerInput() {
+    localStorage.setItem('danger_ect_point', document.getElementById('danger_ect_point').value);
+    localStorage.setItem('danger_ect_todo', document.getElementById('danger_ect_todo').value);
+    generateImage();
+  }
+
+  // ── 도급사 관리감독자 비상연락망 자동저장 ──
+  function onMotherSosInput() {
+    generateImage();
+    if (document.getElementById('mother_sos_autosave').checked) {
+      localStorage.setItem('mother_sos_value', document.getElementById('mother_company_sos').value);
+    }
+  }
+  function onMotherSosAutoSaveToggle() {
+    if (document.getElementById('mother_sos_autosave').checked) {
+      localStorage.setItem('mother_sos_autosave', 'true');
+      localStorage.setItem('mother_sos_value', document.getElementById('mother_company_sos').value);
+    } else {
+      localStorage.removeItem('mother_sos_autosave');
+      localStorage.removeItem('mother_sos_value');
+    }
+  }
+
+  // ── 현장 특이사항 자동저장 ──
+  function onSiteEctInput() {
+    generateImage();
+    if (document.getElementById('site_ect_autosave').checked) {
+      localStorage.setItem('site_ect_text', document.getElementById('site_site_ect_text').value);
+    }
+  }
+  function onSiteEctAutoSaveToggle() {
+    if (document.getElementById('site_ect_autosave').checked) {
+      localStorage.setItem('site_ect_autosave', 'true');
+      localStorage.setItem('site_ect_text', document.getElementById('site_site_ect_text').value);
+    } else {
+      localStorage.removeItem('site_ect_autosave');
+      localStorage.removeItem('site_ect_text');
+    }
+  }
+
+  // ── 혹서기 자동저장 ──
+  const HOT_IDS = ['hot_thermometer','hot_water','hot_icebox','hot_candy','hot_rest','hot_ect_cb'];
+  function onHotChange() {
+    generateImage();
+    if (document.getElementById('hot_autosave').checked) saveHotData();
+  }
+  function saveHotData() {
+    const vals = HOT_IDS.map(id => document.getElementById(id)?.checked ? '1' : '0');
+    localStorage.setItem('hot_checks', vals.join(','));
+    localStorage.setItem('hot_ect_text', document.getElementById('hot_ect_text').value);
+  }
+  function onHotAutoSaveToggle() {
+    if (document.getElementById('hot_autosave').checked) {
+      localStorage.setItem('hot_autosave', 'true');
+      saveHotData();
+    } else {
+      localStorage.removeItem('hot_autosave');
+      localStorage.removeItem('hot_checks');
+      localStorage.removeItem('hot_ect_text');
+    }
+  }
+  function loadHotData() {
+    const saved = localStorage.getItem('hot_checks');
+    if (saved) {
+      saved.split(',').forEach((v, i) => {
+        const el = document.getElementById(HOT_IDS[i]);
+        if (el) el.checked = v === '1';
+      });
+      const etcText = localStorage.getItem('hot_ect_text');
+      if (etcText) document.getElementById('hot_ect_text').value = etcText;
+      if (document.getElementById('hot_ect_cb').checked) {
+        document.getElementById('hot_etc_wrap').style.display = 'block';
+      }
+    }
+  }
+
+  // ── 혹한기 자동저장 ──
+  const COLD_IDS = ['cold_warmer','cold_cloth','cold_ect_cb'];
+  function onColdChange() {
+    generateImage();
+    if (document.getElementById('cold_autosave').checked) saveColdData();
+  }
+  function saveColdData() {
+    const vals = COLD_IDS.map(id => document.getElementById(id)?.checked ? '1' : '0');
+    localStorage.setItem('cold_checks', vals.join(','));
+    localStorage.setItem('cold_ect_text', document.getElementById('cold_ect_text').value);
+  }
+  function onColdAutoSaveToggle() {
+    if (document.getElementById('cold_autosave').checked) {
+      localStorage.setItem('cold_autosave', 'true');
+      saveColdData();
+    } else {
+      localStorage.removeItem('cold_autosave');
+      localStorage.removeItem('cold_checks');
+      localStorage.removeItem('cold_ect_text');
+    }
+  }
+  function loadColdData() {
+    const saved = localStorage.getItem('cold_checks');
+    if (saved) {
+      saved.split(',').forEach((v, i) => {
+        const el = document.getElementById(COLD_IDS[i]);
+        if (el) el.checked = v === '1';
+      });
+      const etcText = localStorage.getItem('cold_ect_text');
+      if (etcText) document.getElementById('cold_ect_text').value = etcText;
+      if (document.getElementById('cold_ect_cb').checked) {
+        document.getElementById('cold_etc_wrap').style.display = 'block';
+      }
+    }
+  }
+
+  // ── 체감온도 기반 혹서기/혹한기 용품 자동 체크 (기타 제외) ──
+  function autoCheckSeasonGear(tempValue) {
+    const temp = parseFloat(tempValue);
+    if (isNaN(temp)) return;
+
+    if (temp >= 30) {
+      HOT_IDS.forEach(id => {
+        if (id === 'hot_ect_cb') return;
+        const el = document.getElementById(id);
+        if (el) el.checked = true;
+      });
+      onHotChange();
+    }
+
+    if (temp <= 10) {
+      COLD_IDS.forEach(id => {
+        if (id === 'cold_ect_cb') return;
+        const el = document.getElementById(id);
+        if (el) el.checked = true;
+      });
+      onColdChange();
+    }
+  }
+
+  function onFakeTemperatureInput() {
+    generateImage();
+    autoCheckSeasonGear(document.getElementById('fake_temperature').value);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedInspector = localStorage.getItem('inspector_value');
+    if (savedInspector) document.getElementById('inspector').value = savedInspector;
+    const savedDangerPoint = localStorage.getItem('danger_ect_point');
+    if (savedDangerPoint) document.getElementById('danger_ect_point').value = savedDangerPoint;
+    const savedDangerTodo = localStorage.getItem('danger_ect_todo');
+    if (savedDangerTodo) document.getElementById('danger_ect_todo').value = savedDangerTodo;
+    if (localStorage.getItem('sign_autosave') === 'true') {
+      document.getElementById('sign_autosave').checked = true;
+      loadSavedSign();
+    }
+    if (localStorage.getItem('hot_autosave') === 'true') {
+      document.getElementById('hot_autosave').checked = true;
+      loadHotData();
+    }
+    if (localStorage.getItem('cold_autosave') === 'true') {
+      document.getElementById('cold_autosave').checked = true;
+      loadColdData();
+    }
+    if (localStorage.getItem('site_ect_autosave') === 'true') {
+      document.getElementById('site_ect_autosave').checked = true;
+      const saved = localStorage.getItem('site_ect_text');
+      if (saved) document.getElementById('site_site_ect_text').value = saved;
+    }
+    if (localStorage.getItem('mother_sos_autosave') === 'true') {
+      document.getElementById('mother_sos_autosave').checked = true;
+      const saved = localStorage.getItem('mother_sos_value');
+      if (saved) document.getElementById('mother_company_sos').value = saved;
+    }
+  });
+function toggleChildrenVisible(parentCheckbox, groupClass) {
+  const group = document.querySelector('.' + groupClass);
+  const children = group.querySelectorAll('input[type="checkbox"]');
+
+  if (parentCheckbox.checked) {
+    group.classList.remove('hidden');
+    children.forEach(cb => cb.disabled = false);
+  } else {
+    group.classList.add('hidden');
+    children.forEach(cb => {
+      cb.checked = false;
+      cb.disabled = true;
+    });
+  }
+
+  if (typeof generateImage === "function") {
+    generateImage();
+  }
+}
+
+  window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll(
+  '.risk_fall_group, .risk_fall_ladder_group, .risk_fall_ladder_width_group, ' +
+  '.risk_car_crush_group, .risk_heavy_machine_group, .risk_car_fall_group, ' +
+  '.risk_electric_group, .risk_drop_group, .risk_boom_group'
+).forEach(group => {
+  group.classList.add('hidden');
+  group.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.disabled = true;
+  });
+});
+  });
+
+  // ── 현장특성 / 작업장환경 / 위험요인 상시 자동저장 ──
+  const SITE_CHAR_VALUES = [
+    'site_road_outside','site_road_inside','site_road_narrow','site_inside',
+    'site_rooftop_combo','site_river','site_manhole','site_near_voltage',
+    'site_weak_ground','site_pipe_work','site_traffic_accident','site_bridge'
+  ];
+  const WORK_ENV_VALUES = [
+    'site_roof','site_rooftop','site_pool','site_steel_tower',
+    'site_strong_pool','site_inbuilding','site_ect'
+  ];
+  const RISK_VALUES = [
+    'risk_fall','risk_fall_1','risk_fall_2','risk_fall_3','risk_fall_4',
+    'risk_fall_ladder','risk_fall_ladder_1','risk_fall_ladder_2','risk_fall_ladder_3',
+    'risk_fall_ladder_width','risk_fall_ladder_width_1','risk_fall_ladder_width_2','risk_fall_ladder_width_3',
+    'risk_car_crush','risk_car_crush_1','risk_car_crush_2',
+    'risk_heavy_machine','risk_heavy_machine_1','risk_heavy_machine_2',
+    'risk_car_fall','risk_car_fall_1','risk_car_fall_2','risk_car_fall_3','risk_car_fall_4','risk_car_fall_5',
+    'risk_electric','risk_electric_1','risk_electric_2','risk_electric_3',
+    'risk_drop','risk_drop_1','risk_drop_2','risk_drop_3','risk_drop_4',
+    'risk_boom','risk_boom_1','risk_boom_2','risk_boom_3'
+  ];
+  const RISK_PARENT_GROUPS = {
+    'risk_fall': 'risk_fall_group',
+    'risk_fall_ladder': 'risk_fall_ladder_group',
+    'risk_fall_ladder_width': 'risk_fall_ladder_width_group',
+    'risk_car_crush': 'risk_car_crush_group',
+    'risk_heavy_machine': 'risk_heavy_machine_group',
+    'risk_car_fall': 'risk_car_fall_group',
+    'risk_electric': 'risk_electric_group',
+    'risk_drop': 'risk_drop_group',
+    'risk_boom': 'risk_boom_group'
+  };
+
+  function saveByValues(key, values) {
+    const data = values.map(v => {
+      const el = document.querySelector(`input[value="${v}"]`);
+      return (el && el.checked) ? '1' : '0';
+    });
+    localStorage.setItem(key, data.join(','));
+  }
+
+  function loadByValues(key, values) {
+    const saved = localStorage.getItem(key);
+    if (!saved) return;
+    const parts = saved.split(',');
+    values.forEach((v, i) => {
+      const el = document.querySelector(`input[value="${v}"]`);
+      if (el && parts[i] !== undefined) el.checked = parts[i] === '1';
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // 복원 (위험요인 hide-all DOMContentLoaded 이후에 실행됨)
+    loadByValues('auto_site_char', SITE_CHAR_VALUES);
+
+    loadByValues('auto_work_env', WORK_ENV_VALUES);
+    const savedWorkEct = localStorage.getItem('auto_work_env_ect');
+    if (savedWorkEct !== null) document.getElementById('site_ect_text').value = savedWorkEct;
+    if (document.getElementById('site_ect_cb')?.checked) {
+      document.getElementById('site_etc_wrap').style.display = 'block';
+    }
+
+    loadByValues('auto_risk', RISK_VALUES);
+    // 체크된 부모의 자식 그룹 표시 및 활성화
+    Object.entries(RISK_PARENT_GROUPS).forEach(([pv, gc]) => {
+      const parent = document.querySelector(`input[value="${pv}"]`);
+      const group = document.querySelector('.' + gc);
+      if (parent?.checked && group) {
+        group.classList.remove('hidden');
+        group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = false);
+      }
+    });
+
+    generateImage();
+
+    // 변경 시 자동저장 리스너
+    document.getElementById('details_site_char').addEventListener('change', () => {
+      saveByValues('auto_site_char', SITE_CHAR_VALUES);
+    });
+
+    document.getElementById('details_work_env').addEventListener('change', () => {
+      saveByValues('auto_work_env', WORK_ENV_VALUES);
+    });
+    document.getElementById('site_ect_text').addEventListener('input', () => {
+      localStorage.setItem('auto_work_env_ect', document.getElementById('site_ect_text').value);
+    });
+
+    document.getElementById('details_risk').addEventListener('change', () => {
+      saveByValues('auto_risk', RISK_VALUES);
+    });
+  });
+
+  // ── 날씨 자동입력 (현재 위치 기반, Open-Meteo API + Nominatim 역지오코딩) ──
+
+  // GPS 사용 불가(모바일 file:// 등 비보안 컨텍스트 포함) 시
+  // IP 기반 위치로 우선 시도 → 그마저 실패하면 진주 기본 좌표로 날씨 로드
+  function fetchWeatherByIP(statusEl, btn) {
+    statusEl.textContent = '📶 GPS 사용 불가 — IP 기반 위치로 날씨 불러오는 중...';
+    statusEl.style.color = '#888';
+
+    fetch('https://ipapi.co/json/')
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => {
+        const lat = data.latitude;
+        const lon = data.longitude;
+        if (!lat || !lon) throw new Error();
+
+        const shortName = data.city || data.region || '현재위치';
+        const fullAddress = [data.region, data.city].filter(Boolean).join(' ')
+          + ' (IP 기반 위치 — 실제 위치와 다를 수 있음, 정확한 GPS는 HTTPS 환경 필요)';
+
+        const locEl = document.getElementById('location');
+        if (locEl && !locEl.value) {
+          locEl.value = shortName;
+          generateImage();
+        }
+        loadWeatherData(lat, lon, statusEl, btn, shortName, fullAddress);
+      })
+      .catch(() => {
+        // IP 기반 위치까지 실패 → 진주 기본값
+        statusEl.textContent = '📍 위치 확인 불가 — 진주 기준으로 날씨 불러오는 중...';
+        statusEl.style.color = '#888';
+        loadWeatherData('35.1798', '128.1076', statusEl, btn, '진주시', '경상남도 진주시 (위치 확인 불가, 기본값)');
+      });
+  }
+
+  // Nominatim 역지오코딩 → 시/군/구 이름 및 상세 주소 반환
+  function reverseGeocode(lat, lon, callback) {
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ko`)
+      .then(r => r.json())
+      .then(data => {
+        const addr = data.address || {};
+        const shortName = addr.city || addr.town || addr.county || addr.village || addr.state || '현재위치';
+        const fullAddress = [
+          addr.state,
+          addr.city || addr.county,
+          addr.city_district,
+          addr.borough,
+          addr.suburb || addr.town || addr.village,
+          addr.road,
+          addr.house_number
+        ].filter(Boolean).join(' ') || data.display_name || '현재위치';
+        callback(shortName, fullAddress);
+      })
+      .catch(() => callback('현재위치', '현재위치'));
+  }
+
+  // ── GPS 정확도 개선 설정 ──
+  const GEO_ACCURACY_TARGET = 50;    // 이 정확도(m) 이하면 즉시 확정
+  const GEO_MAX_WAIT        = 15000; // 최대 대기 시간(ms)
+
+  function fetchWeather() {
+    const statusEl = document.getElementById('weather_status');
+    const btn = document.getElementById('weather_fetch_btn');
+    btn.disabled = true;
+
+    // 브라우저는 보안 컨텍스트(HTTPS 또는 localhost)에서만 GPS를 허용한다.
+    // file:// 로 연 HTML은 여기서 걸린다 → GitHub Pages(HTTPS)로 올리면 해결.
+    if (!window.isSecureContext) {
+      statusEl.innerHTML = '🔒 HTTPS가 아니라 GPS를 쓸 수 없습니다 (파일 직접 열기). IP 기준으로 대체합니다.';
+      statusEl.style.color = '#d9534f';
+      setTimeout(() => fetchWeatherByIP(statusEl, btn), 1500);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      fetchWeatherByIP(statusEl, btn);
+      return;
+    }
+
+    statusEl.textContent = '📡 GPS 위치 확인 중... (실외·창가에서 더 정확합니다)';
+    statusEl.style.color = '#555';
+
+    let best = null;      // 지금까지 받은 가장 정확한 좌표
+    let done = false;
+    let watchId = null;
+
+    const stopWatching = () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      clearTimeout(timer);
+    };
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      stopWatching();
+
+      if (!best) {
+        fetchWeatherByIP(statusEl, btn);
+        return;
+      }
+
+      const lat = best.coords.latitude.toFixed(5);
+      const lon = best.coords.longitude.toFixed(5);
+      const acc = Math.round(best.coords.accuracy);
+
+      statusEl.textContent = `📍 위치 확인 (오차 약 ${acc}m) — 날씨 불러오는 중...`;
+      statusEl.style.color = '#555';
+
+      reverseGeocode(lat, lon, (locationName, fullAddress) => {
+        const locEl = document.getElementById('location');
+        if (locEl && !locEl.value) {
+          locEl.value = locationName;
+          generateImage();
+        }
+        loadWeatherData(lat, lon, statusEl, btn, locationName,
+                        `${fullAddress} (GPS 오차 약 ${acc}m)`);
+      });
+    };
+
+    // 최대 대기 시간이 지나면 그때까지 받은 값 중 가장 좋은 것으로 확정
+    const timer = setTimeout(finish, GEO_MAX_WAIT);
+
+    // getCurrentPosition 한 번이 아니라 watchPosition으로 좌표를 계속 받아
+    // 정확도가 좋아질 때까지 갱신한다 (모바일 초기 좌표는 오차가 큼)
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+        const acc = Math.round(best.coords.accuracy);
+        statusEl.textContent = `📡 위치 보정 중... (현재 오차 약 ${acc}m)`;
+        if (best.coords.accuracy <= GEO_ACCURACY_TARGET) finish();
+      },
+      (err) => {
+        if (best) { finish(); return; }   // 이미 받은 좌표가 있으면 그대로 사용
+        done = true;
+        stopWatching();
+
+        if (err.code === 1) {        // PERMISSION_DENIED
+          statusEl.innerHTML = '⚠ 위치 권한이 거부되었습니다. 브라우저 설정 → 사이트 권한 → 위치를 허용해 주세요.';
+          statusEl.style.color = '#d9534f';
+          setTimeout(() => fetchWeatherByIP(statusEl, btn), 2000);
+        } else {                     // POSITION_UNAVAILABLE / TIMEOUT
+          fetchWeatherByIP(statusEl, btn);
+        }
+      },
+      { enableHighAccuracy: true, timeout: GEO_MAX_WAIT, maximumAge: 0 }
+    );
+  }
+
+  // WMO/wttr.in 코드 → 한국어 날씨 설명
+  function getWeatherDesc(code) {
+    const c = Number(code);
+    if (c === 0 || c === 113)                  return '맑음';
+    if ([1,2,116].includes(c))                 return '대체로 맑음';
+    if ([3,119,122].includes(c))               return '흐림';
+    if ([45,48,143,248,260].includes(c))       return '안개';
+    if ([51,53,55,263,266].includes(c))        return '이슬비';
+    if ([56,57,281,284].includes(c))           return '어는 이슬비';
+    if ([61,63,293,296,299,302].includes(c))   return '비';
+    if ([65,305,308].includes(c))              return '강한 비';
+    if ([66,67,311,314].includes(c))           return '어는 비';
+    if ([71,73,75,77,323,326,329,332,335,338].includes(c)) return '눈';
+    if ([80,81,82,353,356,359].includes(c))    return '소나기';
+    if ([85,86,368,371].includes(c))           return '눈 소나기';
+    if ([95,386,389].includes(c))              return '뇌우';
+    if ([96,99,392,395].includes(c))           return '우박 뇌우';
+    return '날씨 확인 중';
+  }
+
+  // 날씨 체크박스 단일 선택
+  function setWeatherCheck(value) {
+    const el = document.querySelector(`input[value="${value}"]`);
+    if (el) el.checked = true;
+  }
+
+  // 날씨 체크박스·온도 공통 적용
+  function applyWeatherResult(temp, apparent, code, wind, locationName, statusEl, btn, descFn, fullAddress) {
+    const cappedApparent = Math.min(apparent, temp + 3);
+    document.getElementById('real_temperature').value = temp + '°C';
+    document.getElementById('fake_temperature').value = cappedApparent + '°C';
+
+    ['weather_clear','weather_cloudy','weather_rain_or_snow'].forEach(v => {
+      const el = document.querySelector(`input[value="${v}"]`);
+      if (el) el.checked = false;
+    });
+
+    const rainCodes = [51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99,
+                       176,180,182,185,200,227,230,263,266,281,284,293,296,299,302,305,308,
+                       311,314,317,320,323,326,329,332,335,338,350,353,356,359,362,365,368,371,374,377,386,389,392,395];
+    const isRainOrSnow = rainCodes.includes(code);
+    const isClear = [0,1,113].includes(code);
+    const isCloudy = [2,3,45,48,116,119,122,143,248,260].includes(code);
+
+    if (isClear)       setWeatherCheck('weather_clear');
+    if (isCloudy)      setWeatherCheck('weather_cloudy');
+    if (isRainOrSnow)  setWeatherCheck('weather_rain_or_snow');
+
+    autoCheckSeasonGear(cappedApparent);
+    generateImage();
+
+    const desc = descFn ? descFn(code) : getWeatherDesc(code);
+    statusEl.innerHTML =
+      `${desc}, 기온 ${temp}°C, 체감 ${cappedApparent}°C, 풍속 ${wind}m/s`;
+    statusEl.style.color = '#28a745';
+    btn.disabled = false;
+    document.getElementById('weather_details').open = true;
+  }
+
+  // ① Open-Meteo
+  function tryOpenMeteo(lat, lon, locationName, statusEl, btn, onFail, fullAddress) {
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Asia%2FSeoul`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => {
+        const c = data.current;
+        applyWeatherResult(
+          Math.round(c.temperature_2m), Math.round(c.apparent_temperature),
+          c.weather_code, c.wind_speed_10m,
+          locationName, statusEl, btn, getWeatherDesc, fullAddress
+        );
+      })
+      .catch(onFail);
+  }
+
+  // ② wttr.in (Open-Meteo 실패 시 대체)
+  function tryWttr(lat, lon, locationName, statusEl, btn, onFail, fullAddress) {
+    fetch(`https://wttr.in/${lat},${lon}?format=j1`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => {
+        const c = data.current_condition[0];
+        const temp     = parseInt(c.temp_C);
+        const apparent = parseInt(c.FeelsLikeC);
+        const code     = parseInt(c.weatherCode);
+        const wind     = Math.round(parseInt(c.windspeedKmph) / 3.6); // km/h → m/s
+        applyWeatherResult(temp, apparent, code, wind, locationName + ' (wttr)', statusEl, btn, null, fullAddress);
+      })
+      .catch(onFail);
+  }
+
+  function loadWeatherData(lat, lon, statusEl, btn, locationName, fullAddress) {
+    statusEl.textContent = '🌤 날씨 정보 불러오는 중...';
+    statusEl.style.color = '#555';
+
+    tryOpenMeteo(lat, lon, locationName, statusEl, btn, () => {
+      // Open-Meteo 실패 → wttr.in 시도
+      statusEl.textContent = '🔄 대체 서버로 재시도 중...';
+      tryWttr(lat, lon, locationName, statusEl, btn, () => {
+        statusEl.textContent = '⚠ 날씨 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+        statusEl.style.color = '#d9534f';
+        btn.disabled = false;
+      }, fullAddress);
+    }, fullAddress);
+  }
+
+  const WEATHER_VALUES = ['weather_clear','weather_cloudy','weather_wind','weather_rain_or_snow','weather_hot','weather_cold'];
+
+  function onSiteCharChange(el) {
+    SITE_CHAR_VALUES.forEach(v => {
+      const cb = document.querySelector(`input[value="${v}"]`);
+      if (cb && cb !== el) cb.checked = false;
+    });
+    generateImage();
+  }
+
+  // ── 작업장 환경 → 현장특성 / 위험요인 자동입력 매핑 ──
+  const WORK_ENV_AUTO_MAP = {
+    'site_roof': {
+      siteChar: 'site_rooftop_combo',
+      risks: ['risk_electric','risk_electric_1',
+              'risk_drop','risk_drop_1','risk_drop_4']
+    },
+    'site_rooftop': {
+      siteChar: 'site_rooftop_combo',
+      risks: ['risk_fall','risk_fall_3','risk_fall_4',
+              'risk_electric','risk_electric_1',
+              'risk_drop','risk_drop_1','risk_drop_4']
+    },
+    'site_pool': {
+      siteChar: 'site_road_narrow',
+      risks: ['risk_fall','risk_fall_1','risk_fall_2','risk_fall_4',
+              'risk_fall_ladder','risk_fall_ladder_1','risk_fall_ladder_2','risk_fall_ladder_3',
+              'risk_electric','risk_electric_1','risk_electric_2',
+              'risk_drop','risk_drop_1','risk_drop_4']
+    },
+    'site_steel_tower': {
+      siteChar: 'site_road_narrow',
+      risks: ['risk_fall','risk_fall_2','risk_fall_4',
+              'risk_electric','risk_electric_1','risk_electric_2',
+              'risk_drop','risk_drop_1','risk_drop_4']
+    },
+    'site_strong_pool': {
+      siteChar: 'site_road_narrow',
+      risks: ['risk_fall','risk_fall_1','risk_fall_4',
+              'risk_electric','risk_electric_1',
+              'risk_drop','risk_drop_1','risk_drop_4']
+    },
+    'site_inbuilding': {
+      siteChar: 'site_inside',
+      risks: ['risk_fall_ladder','risk_fall_ladder_1','risk_fall_ladder_2',
+              'risk_electric','risk_electric_1']
+    },
+    'site_ect': { siteChar: null, risks: ['risk_electric','risk_electric_1'] }
+  };
+
+  // 부모 위험요인 값 찾기 (자식 value가 주어지면 그 부모 key 반환)
+  function findParentRiskVal(childVal) {
+    return Object.keys(RISK_PARENT_GROUPS).find(pv =>
+      childVal !== pv && childVal.startsWith(pv + '_')
+    ) || null;
+  }
+
+  // 위험요인 부모 체크 + 자식 그룹 표시
+  function showRiskGroup(parentVal) {
+    const parentCb = document.querySelector(`input[value="${parentVal}"]`);
+    const groupClass = RISK_PARENT_GROUPS[parentVal];
+    const group = groupClass ? document.querySelector('.' + groupClass) : null;
+    if (parentCb) parentCb.checked = true;
+    if (group) {
+      group.classList.remove('hidden');
+      group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = false);
+    }
+  }
+
+  // 위험요인 부모 해제 + 자식 그룹 숨김 (자식도 모두 해제)
+  function hideRiskGroup(parentVal) {
+    const parentCb = document.querySelector(`input[value="${parentVal}"]`);
+    const groupClass = RISK_PARENT_GROUPS[parentVal];
+    const group = groupClass ? document.querySelector('.' + groupClass) : null;
+    if (parentCb) parentCb.checked = false;
+    if (group) {
+      group.classList.add('hidden');
+      group.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+        cb.disabled = true;
+      });
+    }
+  }
+
+  function onWorkEnvChange(el) {
+    // 단일 선택: 체크 시 다른 작업장 환경 모두 해제 후 관련 항목 초기화
+    if (el.checked) {
+      WORK_ENV_VALUES.forEach(v => {
+        if (v === el.value) return;
+        const otherCb = document.querySelector(`input[value="${v}"]`);
+        if (otherCb && otherCb.checked) {
+          otherCb.checked = false;
+          // 해제된 env의 기타 입력창 숨김
+          if (v === 'site_ect') {
+            document.getElementById('site_etc_wrap').style.display = 'none';
+            document.getElementById('site_ect_text').value = '';
+          }
+        }
+      });
+      // 기존 자동입력 위험요인/현장특성 전체 초기화 (새로 선택된 것만 적용)
+      SITE_CHAR_VALUES.forEach(v => {
+        const cb = document.querySelector(`input[value="${v}"]`);
+        if (cb) cb.checked = false;
+      });
+      RISK_VALUES.forEach(v => {
+        const cb = document.querySelector(`input[value="${v}"]`);
+        if (cb) cb.checked = false;
+      });
+      Object.values(RISK_PARENT_GROUPS).forEach(gc => {
+        const group = document.querySelector('.' + gc);
+        if (group) {
+          group.classList.add('hidden');
+          group.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = false; cb.disabled = true;
+          });
+        }
+      });
+    }
+
+    // 기타 입력창 표시/숨김
+    if (el.value === 'site_ect') {
+      document.getElementById('site_etc_wrap').style.display = el.checked ? 'block' : 'none';
+      if (!el.checked) document.getElementById('site_ect_text').value = '';
+    }
+
+    // 현재 체크된 작업장 환경 목록
+    const checkedEnvs = WORK_ENV_VALUES.filter(v => {
+      const cb = document.querySelector(`input[value="${v}"]`);
+      return cb && cb.checked;
+    });
+
+    // 모든 체크된 env의 매핑값 집계
+    const neededSiteChars = new Set();
+    const neededRisks = new Set();
+    checkedEnvs.forEach(v => {
+      const m = WORK_ENV_AUTO_MAP[v];
+      if (!m) return;
+      if (m.siteChar) neededSiteChars.add(m.siteChar);
+      m.risks.forEach(r => neededRisks.add(r));
+    });
+
+    // ── 현장특성 자동 처리 ──
+    if (el.checked) {
+      // 체크 시: 이 env의 siteChar를 선택 (radio처럼 하나만)
+      const map = WORK_ENV_AUTO_MAP[el.value];
+      if (map && map.siteChar) {
+        SITE_CHAR_VALUES.forEach(v => {
+          const cb = document.querySelector(`input[value="${v}"]`);
+          if (cb) cb.checked = (v === map.siteChar);
+        });
+      }
+    } else {
+      // 해제 시: 내가 갖고 있던 siteChar가 남은 env에도 필요 없으면 해제
+      const map = WORK_ENV_AUTO_MAP[el.value];
+      if (map && map.siteChar && !neededSiteChars.has(map.siteChar)) {
+        const cb = document.querySelector(`input[value="${map.siteChar}"]`);
+        if (cb) cb.checked = false;
+      }
+    }
+
+    // ── 위험요인 자동 처리 ──
+    if (el.checked) {
+      const map = WORK_ENV_AUTO_MAP[el.value];
+      if (map) {
+        map.risks.forEach(r => {
+          const cb = document.querySelector(`input[value="${r}"]`);
+          if (!cb) return;
+          cb.checked = true;
+          // 부모 그룹이면 자식 표시
+          if (RISK_PARENT_GROUPS[r]) {
+            showRiskGroup(r);
+          }
+          // 자식이면 부모도 체크 + 그룹 표시
+          const parentVal = findParentRiskVal(r);
+          if (parentVal) showRiskGroup(parentVal);
+        });
+      }
+    } else {
+      // 해제 시: 남은 env들이 필요 없는 risk만 해제
+      const map = WORK_ENV_AUTO_MAP[el.value];
+      if (map) {
+        map.risks.forEach(r => {
+          if (neededRisks.has(r)) return; // 다른 env가 아직 필요
+          const cb = document.querySelector(`input[value="${r}"]`);
+          if (!cb) return;
+          cb.checked = false;
+          // 부모 그룹이면 자식 모두 해제
+          if (RISK_PARENT_GROUPS[r]) {
+            // 자식 중에 아직 체크된 것이 neededRisks에 있으면 그룹 유지
+            const groupClass = RISK_PARENT_GROUPS[r];
+            const group = document.querySelector('.' + groupClass);
+            if (group) {
+              const anyChildNeeded = Array.from(
+                group.querySelectorAll('input[type="checkbox"]')
+              ).some(cb2 => neededRisks.has(cb2.value));
+              if (!anyChildNeeded) hideRiskGroup(r);
+            }
+          }
+        });
+        // 부모가 해제됐는데 남은 자식만으로 그룹 유지 여부 재확인
+        Object.keys(RISK_PARENT_GROUPS).forEach(pv => {
+          if (neededRisks.has(pv)) return;
+          const parentCb = document.querySelector(`input[value="${pv}"]`);
+          if (!parentCb || parentCb.checked) return;
+          // 자식 중 neededRisks에 있는 것이 있으면 부모도 재체크
+          const groupClass = RISK_PARENT_GROUPS[pv];
+          const group = document.querySelector('.' + groupClass);
+          if (group) {
+            const anyChildNeeded = Array.from(
+              group.querySelectorAll('input[type="checkbox"]')
+            ).some(cb => neededRisks.has(cb.value));
+            if (anyChildNeeded) showRiskGroup(pv);
+          }
+        });
+      }
+    }
+
+    generateImage();
+  }
+</script>
+</body>
+</html>
