@@ -17,141 +17,410 @@
 <link rel="icon" href="icon-192.png">
 <title>현장 위험성 평가표 작성</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-body {
-  font-family: -apple-system, sans-serif;
-  padding: 10px;
-  max-width: 480px;
-  margin: auto;
-  background-color: #f8f9fa;
+/* ─────────────────────────────────────────────
+   현장 위험성 평가표 — 표시 스타일
+   구조·id·이벤트·스크립트는 건드리지 않는다.
+   ───────────────────────────────────────────── */
+:root{
+  --ink:#0D2430;          /* 딥 페트롤 슬레이트 */
+  --ink-soft:#1B3B49;
+  --slate:#56707C;        /* 보조 텍스트 */
+  --paper:#E9EDEF;        /* 페이지 바탕 */
+  --card:#FFFFFF;
+  --rule:#D5DDE1;         /* 실선 */
+  --rule-soft:#E8EDEF;
+  --accent:#14697F;       /* 계기 청록 — 입력·확인 */
+  --accent-tint:#EAF3F6;
+  --hazard:#A8500C;       /* 안전 앰버 — 위험요인 전용 */
+  --hazard-tint:#FAF2EA;
+  --sans:"IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-}
-/* 일반 입력 필드 레이아웃 */
-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-/* 체크박스 전용 레이아웃*/
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 5px;
-}
-.checkbox-group label {
-  flex-direction: row; /* 체크박스와 글자를 가로로 */
-  align-items: center;
-  font-weight: normal;
-  cursor: pointer;
-  gap: 8px;
-}
-/* 항목들을 한 줄에 균등 배분 */
-.checkbox-group.horizontal {
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 2px;
-  width: 100%;
-}
-.checkbox-group.horizontal label {
-  flex: 1 1 0;
-  min-width: 0;
-  justify-content: center;
-  white-space: nowrap;
-  font-size: 12px;
-  gap: 3px;
-  margin-bottom: 0;
-}
-.checkbox-group.horizontal input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  margin: 0;
-}
-input[type="text"], input[type="date"], input[type="datetime-local"] {
-  padding: 10px;
-  margin-top: 5px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  width: 100%;
-  box-sizing: border-box;
-}
-input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-}
-details {
-  border: 1px solid #eee;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 5px;
-}
-summary {
-  font-weight: bold;
-  cursor: pointer;
-  padding: 5px 0;
-}
-.etc-input {
-  display: none;
-  margin-top: 10px;
-  padding-left: 10px;
-  border-left: 3px solid #007bff;
-}
-.iphone-notice {
-  font-size: 12px;
-  color: #d9534f;
-  text-align: center;
-  margin: 10px 0;
-}
-.save-btn {
-  background-color: #007bff;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.hidden {
-  display: none;
-}
-#result-container {
-  margin-top: 20px;
-  width: 100%;
-  text-align: center;
-}
-#final-image {
-  width: 100%;
-  height: auto;
-  border: 2px solid #333;
-  border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+*{ -webkit-tap-highlight-color:transparent; }
+
+body{
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.5;
+  color:var(--ink);
+  background:var(--paper);
+  padding:14px 12px 44px;
+  max-width:480px;
+  margin:auto;
+  -webkit-font-smoothing:antialiased;
 }
 
-.optional-field { display: none; }
-body.show-optional label.optional-field { display: flex; }
-body.show-optional details.optional-field { display: block; }
-body.show-optional #sign_row { display: flex; }
-#optional-toggle-row {
-  display:flex; align-items:center; justify-content:space-between;
-  gap:8px; margin-bottom:10px; padding:8px 10px;
-  background:#eef2f5; border-radius:5px; font-size:13px;
+/* ── 상단 명판 ── */
+h2{
+  margin:0 !important;
+  padding:17px 18px 3px;
+  background:var(--ink);
+  color:#fff;
+  font-size:19px;
+  font-weight:600;
+  letter-spacing:-.02em;
+  border-radius:12px 12px 0 0;
 }
-#optional-toggle-row label {
-  flex-direction:row; align-items:center; gap:6px;
-  margin-bottom:0; font-weight:normal; font-size:13px;
+h2 + div{                      /* 문의 · 진주품질개선팀 */
+  margin:0 0 16px !important;
+  padding:2px 18px 14px !important;
+  background:var(--ink);
+  color:rgba(255,255,255,.52) !important;
+  font-family:var(--mono);
+  font-size:10.5px !important;
+  letter-spacing:.07em;
+  border-radius:0 0 12px 12px;
+  box-shadow:inset 0 -3px 0 var(--hazard);   /* 안전 스트라이프 */
+}
+
+/* ── 본문 카드 ── */
+.form{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  background:var(--card);
+  padding:18px 16px 20px;
+  border:1px solid var(--rule);
+  border-radius:12px;
+  box-shadow:0 1px 2px rgba(13,36,48,.04), 0 10px 26px -14px rgba(13,36,48,.28);
+}
+
+/* ── 입력 필드 ── */
+label{
+  display:flex;
+  flex-direction:column;
+  font-size:11.5px;
+  font-weight:600;
+  letter-spacing:.05em;
+  color:var(--slate);
+  margin-bottom:0;
+}
+input[type="text"], input[type="date"], input[type="datetime-local"]{
+  font-family:var(--sans);
+  font-size:15px;
+  color:var(--ink);
+  padding:11px 12px;
+  margin-top:6px;
+  border:1px solid var(--rule);
+  border-radius:8px;
+  background:#FBFCFD;
+  width:100%;
+  box-sizing:border-box;
+  transition:border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+input[type="text"]:focus, input[type="date"]:focus, input[type="datetime-local"]:focus{
+  outline:none;
+  background:#fff;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(20,105,127,.15);
+}
+input::placeholder{ color:#9DB0B8; font-weight:400; }
+
+/* 작업시간 묶음 제목 */
+div:has(> div > #date) > div:first-child{
+  font-size:11.5px !important;
+  font-weight:600 !important;
+  letter-spacing:.05em;
+  color:var(--slate);
+}
+
+/* ── 체크박스 (이 화면의 주인공) ── */
+input[type="checkbox"]{
+  -webkit-appearance:none;
+  appearance:none;
+  width:18px !important;
+  height:18px !important;
+  flex:0 0 auto;
+  margin:0;
+  border:1.5px solid #B7C5CB;
+  border-radius:4px;
+  background-color:#fff;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:13px 13px;
+  cursor:pointer;
+  transition:background-color .12s ease, border-color .12s ease;
+}
+input[type="checkbox"]:checked{
+  background-color:var(--accent);
+  border-color:var(--accent);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5 10 17.5 19 7'/%3E%3C/svg%3E");
+}
+input[type="checkbox"]:disabled{ opacity:.35; cursor:default; }
+input[type="checkbox"]:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(20,105,127,.28);
+}
+
+.checkbox-group{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  margin-top:6px;
+}
+.checkbox-group > label{
+  flex-direction:row;
+  align-items:center;
+  gap:9px;
+  padding:6px 8px;
+  margin:0 -8px;
+  border-radius:6px;
+  font-size:13.5px;
+  font-weight:400;
+  letter-spacing:0;
+  color:var(--ink);
+  cursor:pointer;
+  transition:background-color .12s ease;
+}
+.checkbox-group > label:has(> input:checked){
+  background:var(--accent-tint);
+  font-weight:500;
+}
+
+/* 한 줄 균등 배분 (기상 상태) */
+.checkbox-group.horizontal{
+  flex-direction:row;
+  flex-wrap:nowrap;
+  gap:1px;
+  margin:6px -8px 0;
+}
+.checkbox-group.horizontal > label{
+  flex:1 1 0;
+  min-width:0;
+  justify-content:center;
+  white-space:nowrap;
+  font-size:clamp(10px,2.8vw,12px);
+  gap:3px;
+  margin:0;
+  padding:7px 0;
+}
+.checkbox-group.horizontal input[type="checkbox"]{
+  width:15px !important;
+  height:15px !important;
+  border-radius:3px;
+  background-size:10px 10px;
+}
+
+/* 축약형 체크 라벨 */
+.form label:has(> input[type="checkbox"]){ color:var(--ink); letter-spacing:0; }
+
+/* ── 접이식 섹션 ── */
+details{
+  border:1px solid var(--rule);
+  border-radius:10px;
+  padding:0 14px 14px;
+  margin-bottom:0;
+  background:var(--card);
+  overflow:hidden;
+}
+details:not([open]){ padding-bottom:0; }
+summary{
+  position:relative;
+  margin:0 -14px 12px;
+  padding:12px 14px 12px 27px;
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.02em;
+  color:var(--ink);
+  cursor:pointer;
+  list-style:none;
+  background:linear-gradient(180deg,#FAFCFC,#F2F7F8);
+  border-bottom:1px solid transparent;
+}
+details:not([open]) > summary{ margin-bottom:0; }
+details[open] > summary{ border-bottom-color:var(--rule); }
+summary::-webkit-details-marker{ display:none; }
+summary::before{
+  content:"";
+  position:absolute;
+  left:14px; top:50%;
+  width:5px; height:5px;
+  border-right:1.6px solid var(--slate);
+  border-bottom:1.6px solid var(--slate);
+  transform:translateY(-70%) rotate(-45deg);
+  transition:transform .18s ease;
+}
+details[open] > summary::before{ transform:translateY(-30%) rotate(45deg); }
+
+/* ── 위험 요인: 안전 앰버 영역 ── */
+details:has(.risk_car_fall_group){ border-color:#E5D0BC; }
+details:has(.risk_car_fall_group) > summary{
+  background:linear-gradient(180deg,#FCF7F2,#F7EEE5);
+  color:var(--hazard);
+  box-shadow:inset 3px 0 0 var(--hazard);
+}
+details:has(.risk_car_fall_group) > summary::before{
+  border-right-color:var(--hazard);
+  border-bottom-color:var(--hazard);
+}
+details:has(.risk_car_fall_group) input[type="checkbox"]:checked{
+  background-color:var(--hazard);
+  border-color:var(--hazard);
+}
+details:has(.risk_car_fall_group) .checkbox-group > label:has(> input:checked){
+  background:var(--hazard-tint);
+}
+
+/* 위험요인 상위/하위 계층 */
+.parent-group{
+  border-top:1px solid var(--rule-soft);
+  padding-top:12px;
+  margin-top:12px;
+}
+.parent-group:first-of-type{ border-top:0; padding-top:0; margin-top:0; }
+.parent-group > label{
+  flex-direction:row;
+  align-items:center;
+  gap:9px;
+  font-size:13.5px;
+  font-weight:600;
+  letter-spacing:0;
+  color:var(--ink);
+  cursor:pointer;
+}
+.parent-group .checkbox-group{
+  margin-left:9px;
+  padding-left:16px;
+  border-left:1px solid var(--rule);
+}
+
+/* ── 작업장 환경 ── */
+#details_work_env{
+  border:1px solid var(--rule) !important;
+  border-radius:10px !important;
+  padding:14px !important;
+  background:linear-gradient(180deg,#FBFDFD,#F4F8F9);
+}
+#details_work_env > div:first-child{
+  font-size:11.5px !important;
+  font-weight:600 !important;
+  letter-spacing:.08em;
+  color:var(--slate);
+  margin-bottom:11px !important;
+}
+#details_work_env label{
+  font-size:13.5px;
+  font-weight:400;
+  letter-spacing:0;
+  color:var(--ink);
+}
+
+/* ── 기상 자동입력 버튼 ── */
+#weather_fetch_btn{
+  background:var(--accent) !important;
+  font-family:var(--sans);
+  font-size:11.5px !important;
+  font-weight:500;
+  letter-spacing:.02em;
+  padding:6px 12px !important;
+  border-radius:7px !important;
+}
+#weather_status{ color:var(--ink) !important; font-size:12px !important; }
+
+/* ── 서명 ── */
+#sign_row > button, #signModal button{
+  font-family:var(--sans);
+  font-size:13px;
+  font-weight:500;
+  color:var(--ink);
+  background:#fff;
+  border:1px solid var(--rule);
+  border-radius:8px;
+  padding:9px 14px;
+  cursor:pointer;
+}
+#sign_row > button:active, #signModal button:active{ background:#F1F5F6; }
+
+/* ── 추가 항목 토글 ── */
+#optional-toggle-row{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; margin-bottom:14px; padding:10px 12px;
+  background:transparent;
+  border:1px dashed var(--rule);
+  border-radius:10px;
+  font-size:12.5px;
+}
+#optional-toggle-row label{
+  flex-direction:row; align-items:center; gap:7px;
+  margin-bottom:0; font-weight:600; font-size:12.5px;
+  letter-spacing:.01em; color:var(--ink);
   white-space:nowrap; cursor:pointer; display:flex;
 }
-#optional-count { color:#777; font-size:12px; }
+#optional-count{
+  color:var(--slate);
+  font-size:10.5px;
+  line-height:1.5;
+  text-align:left;
+  word-break:keep-all;
+  overflow-wrap:normal;
+}
+
+/* ── 기타 입력 ── */
+.etc-input{
+  display:none;
+  margin-top:10px;
+  padding-left:12px;
+  border-left:2px solid var(--accent);
+}
+
+/* ── 저장 ── */
+.iphone-notice{
+  font-size:11.5px;
+  color:var(--slate);
+  text-align:center;
+  margin:16px 0 2px;
+}
+.save-btn{
+  font-family:var(--sans);
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:.02em;
+  color:#fff;
+  background:var(--ink);
+  padding:15px;
+  border:none;
+  border-radius:9px;
+  cursor:pointer;
+  box-shadow:0 8px 18px -10px rgba(13,36,48,.75);
+  transition:transform .1s ease, background-color .16s ease;
+}
+.save-btn:active{ transform:translateY(1px); background:var(--ink-soft); }
+
+/* ── 결과 이미지 ── */
+#result-container{ margin-top:22px; width:100%; text-align:center; }
+#final-image{
+  width:100%;
+  height:auto;
+  border:1px solid var(--rule);
+  border-radius:10px;
+  box-shadow:0 12px 32px -16px rgba(13,36,48,.5);
+}
+
+/* ── 배너 ── */
+#install-bar{ background:var(--ink) !important; border-radius:10px !important; }
+#install-btn{
+  background:#fff !important; color:var(--ink) !important;
+  font-family:var(--sans); border-radius:6px !important;
+}
+#ios-guide{ border-radius:10px !important; }
+
+/* ── 표시 제어 ── */
+.hidden{ display:none; }
+.optional-field{ display:none; }
+body.show-optional label.optional-field{ display:flex; }
+body.show-optional details.optional-field{ display:block; }
+body.show-optional #sign_row{ display:flex; }
+
+/* ── 접근성 ── */
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce){
+  *{ transition:none !important; animation:none !important; }
+}
 </style>
 </head>
 
