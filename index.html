@@ -1,3 +1,7 @@
+<!--
+  현장 위험성 평가표 작성
+  제작 : 진주품질개선팀
+-->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,6 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="위험성평가">
 <meta name="theme-color" content="#1f6f8b">
+<meta name="author" content="진주품질개선팀">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
@@ -49,6 +54,28 @@ label {
   font-weight: normal;
   cursor: pointer;
   gap: 8px;
+}
+/* 항목들을 한 줄에 균등 배분 */
+.checkbox-group.horizontal {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 2px;
+  width: 100%;
+}
+.checkbox-group.horizontal label {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 12px;
+  gap: 3px;
+  margin-bottom: 0;
+}
+.checkbox-group.horizontal input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin: 0;
 }
 input[type="text"], input[type="date"], input[type="datetime-local"] {
   padding: 10px;
@@ -146,7 +173,8 @@ body.show-optional details.optional-field { display: block; }
   3. 오른쪽 위 <b>추가</b> 누르기
 </div>
 
-<h2>현장 위험성 평가표 작성</h2>
+<h2 style="margin-bottom:4px;">현장 위험성 평가표 작성</h2>
+<div style="font-size:12px; color:#888; margin:0 0 12px 0;">문의 · 진주품질개선팀</div>
 
 <div class="form">
 
@@ -181,13 +209,10 @@ body.show-optional details.optional-field { display: block; }
       <input type="checkbox" value="site_pool" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 전주
     </label>
     <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
-      <input type="checkbox" value="site_steel_tower" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 철탑
+      <input type="checkbox" value="site_steel_tower" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 철탑/강관주(실외평지)
     </label>
     <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
-      <input type="checkbox" value="site_strong_pool" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 강관주
-    </label>
-    <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
-      <input type="checkbox" value="site_inbuilding" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 인빌딩(RF)
+      <input type="checkbox" value="site_inbuilding" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 건물 안(실내)
     </label>
     <label style="flex-direction:row; align-items:center; font-weight:normal; cursor:pointer; gap:6px; display:flex;">
       <input type="checkbox" value="site_ect" id="site_ect_cb" onchange="onWorkEnvChange(this)" style="width:18px;height:18px;"> 기타
@@ -227,7 +252,7 @@ body.show-optional details.optional-field { display: block; }
   </summary>
   <div id="weather_status" style="font-size:12px; color:#555; margin:6px 0 4px 0; min-height:16px;"></div>
   <div style="font-size:11px; color:#999; margin:0 0 6px 0;">※ 모바일에서 파일을 직접 열면(file://) GPS가 차단되어 IP 기반 위치(부정확)로 대체됩니다. 정확한 GPS 위치가 필요하면 이 파일을 HTTPS 웹서버에 올려서 접속해야 합니다.</div>
-  <div class="checkbox-group">
+  <div class="checkbox-group horizontal">
     <label><input type="checkbox" value="weather_clear" onchange="onWeatherChange(this)"> 맑음</label>
     <label><input type="checkbox" value="weather_cloudy" onchange="onWeatherChange(this)"> 흐림</label>
     <label><input type="checkbox" value="weather_wind" onchange="onWeatherChange(this)"> 강풍</label>
@@ -1146,7 +1171,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
   ];
   const WORK_ENV_VALUES = [
     'site_roof','site_rooftop','site_pool','site_steel_tower',
-    'site_strong_pool','site_inbuilding','site_ect'
+    'site_inbuilding','site_ect'
   ];
   const RISK_VALUES = [
     'risk_fall','risk_fall_1','risk_fall_2','risk_fall_3','risk_fall_4',
@@ -1490,14 +1515,14 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
   const WORK_ENV_AUTO_MAP = {
     'site_roof': {
       siteChar: 'site_rooftop_combo',
-      risks: ['risk_electric','risk_electric_1',
-              'risk_drop','risk_drop_1','risk_drop_4']
+      risks: ['risk_car_fall','risk_car_fall_1','risk_car_fall_2',
+              'risk_electric','risk_electric_1']
     },
     'site_rooftop': {
-      siteChar: 'site_rooftop_combo',
-      risks: ['risk_fall','risk_fall_3','risk_fall_4',
-              'risk_electric','risk_electric_1',
-              'risk_drop','risk_drop_1','risk_drop_4']
+      siteChar: 'site_inside',
+      risks: ['risk_fall','risk_fall_1','risk_fall_2','risk_fall_3',
+              'risk_car_fall','risk_car_fall_1','risk_car_fall_2',
+              'risk_electric','risk_electric_1']
     },
     'site_pool': {
       siteChar: 'site_road_narrow',
@@ -1508,19 +1533,12 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     },
     'site_steel_tower': {
       siteChar: 'site_road_narrow',
-      risks: ['risk_fall','risk_fall_2','risk_fall_4',
-              'risk_electric','risk_electric_1','risk_electric_2',
-              'risk_drop','risk_drop_1','risk_drop_4']
-    },
-    'site_strong_pool': {
-      siteChar: 'site_road_narrow',
-      risks: ['risk_fall','risk_fall_1','risk_fall_4',
-              'risk_electric','risk_electric_1',
-              'risk_drop','risk_drop_1','risk_drop_4']
+      risks: ['risk_car_fall','risk_car_fall_1','risk_car_fall_2',
+              'risk_electric','risk_electric_1']
     },
     'site_inbuilding': {
       siteChar: 'site_inside',
-      risks: ['risk_fall_ladder','risk_fall_ladder_1','risk_fall_ladder_2',
+      risks: ['risk_car_fall','risk_car_fall_1','risk_car_fall_2',
               'risk_electric','risk_electric_1']
     },
     'site_ect': { siteChar: null, risks: ['risk_electric','risk_electric_1'] }
