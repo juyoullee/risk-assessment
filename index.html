@@ -140,6 +140,7 @@ summary {
 .optional-field { display: none; }
 body.show-optional label.optional-field { display: flex; }
 body.show-optional details.optional-field { display: block; }
+body.show-optional #sign_row { display: flex; }
 #optional-toggle-row {
   display:flex; align-items:center; justify-content:space-between;
   gap:8px; margin-bottom:10px; padding:8px 10px;
@@ -183,13 +184,21 @@ body.show-optional details.optional-field { display: block; }
     <input type="checkbox" id="optional-toggle" style="width:16px;height:16px;" onchange="toggleOptionalFields()">
     추가 항목 보기
   </label>
-  <span id="optional-count">도급사명 · 작업공종 · 건설장비 · 신호수 · 유도자 · 협력사 비상연락망</span>
+  <span id="optional-count">도급사명 · 작업공종 · 건설장비 · 신호수 · 유도자 · 협력사 비상연락망 · 서명입력</span>
 </div>
 
 <label>협력사명 <input type="text" id="son_company" value="SKO" oninput="generateImage()"></label>
 <label class="optional-field">도급사명 <input type="text" id="mother_company" oninput="generateImage()"></label>
-<label>시작시간 <input type="datetime-local" id="date" oninput="onStartDateChange()"></label>
-<label>종료시간 <input type="datetime-local" id="end_date" oninput="onEndDateChange()"></label>
+<div style="margin-bottom:5px;">
+  <div style="font-size:14px; font-weight:bold;">작업시간</div>
+  <div style="display:flex; align-items:center; gap:5px; margin-top:5px;">
+    <input type="datetime-local" id="date" oninput="onStartDateChange()"
+      style="flex:1 1 0; min-width:0; margin-top:0; padding:8px 4px; font-size:12px;">
+    <span style="font-size:13px; color:#888; flex-shrink:0;">~</span>
+    <input type="datetime-local" id="end_date" oninput="onEndDateChange()"
+      style="flex:1 1 0; min-width:0; margin-top:0; padding:8px 4px; font-size:12px;">
+  </div>
+</div>
 <label>국소명 <input type="text" id="location" oninput="generateImage()"></label>
 <label class="optional-field">작업공종 <input type="text" id="what_do" oninput="generateImage()"></label>
 <label>투입인원
@@ -235,7 +244,7 @@ body.show-optional details.optional-field { display: block; }
   </div>
 </div>
 
-<div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+<div id="sign_row" class="optional-field" style="align-items:center; gap:8px; margin-top:10px;">
   <button onclick="openSign()" style="padding:10px; cursor:pointer;">서명 입력</button>
   <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin-bottom:0; white-space:nowrap;">
     <input type="checkbox" id="sign_autosave" style="width:16px;height:16px;" onchange="onSignAutoSaveToggle()"> 자동서명
@@ -262,8 +271,14 @@ body.show-optional details.optional-field { display: block; }
   </div>
 </details>
 
-<label>체감온도 <input type="text" id="fake_temperature" oninput="onFakeTemperatureInput()"></label>
-<label>기온 <input type="text" id="real_temperature" oninput="generateImage()"></label>
+<div style="display:flex; gap:8px; margin-bottom:5px;">
+  <label style="flex:1 1 0; min-width:0; margin-bottom:0;">체감온도
+    <input type="text" id="fake_temperature" oninput="onFakeTemperatureInput()">
+  </label>
+  <label style="flex:1 1 0; min-width:0; margin-bottom:0;">기온
+    <input type="text" id="real_temperature" oninput="generateImage()">
+  </label>
+</div>
 
 <details class="optional-field">
   <summary>건설장비</summary>
