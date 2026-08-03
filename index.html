@@ -469,10 +469,10 @@ body.show-optional #sign_row{ display:flex; }
   <div style="font-size:14px; font-weight:bold;">작업시간</div>
   <div style="display:flex; align-items:center; gap:5px; margin-top:5px;">
     <input type="datetime-local" id="date" oninput="onStartDateChange()"
-      style="flex:1 1 0; min-width:0; margin-top:0; padding:8px 4px; font-size:12px;">
+      style="flex:1 1 0; min-width:0; margin-top:0; padding:8px 4px; font-size:11px;">
     <span style="font-size:13px; color:#888; flex-shrink:0;">~</span>
     <input type="datetime-local" id="end_date" oninput="onEndDateChange()"
-      style="flex:1 1 0; min-width:0; margin-top:0; padding:8px 4px; font-size:12px;">
+      style="flex:1 1 0; min-width:0; margin-top:0; padding:8px 4px; font-size:11px;">
   </div>
 </div>
 <label>국소명 <input type="text" id="location" oninput="generateImage()"></label>
@@ -1623,7 +1623,9 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     });
   });
 
-  // ── 날씨 자동입력 (현재 위치 기반, Open-Meteo API + Nominatim 역지오코딩) ──
+  // ── 날씨 자동입력 (현재 위치 기반) ──
+  // 속도 우선 설계: GPS는 정확도 수렴을 기다리지 않고 첫 좌표를 즉시 사용하고,
+  // 주소 조회·기본 날씨·기상청 실측치를 전부 동시에(병렬로) 요청한다.
 
   // GPS 사용 불가(모바일 file:// 등 비보안 컨텍스트 포함) 시
   // IP 기반 위치로 우선 시도 → 그마저 실패하면 진주 기본 좌표로 날씨 로드
@@ -1638,28 +1640,23 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
         const lon = data.longitude;
         if (!lat || !lon) throw new Error();
 
-        const shortName = data.city || data.region || '현재위치';
         const fullAddress = [data.region, data.city].filter(Boolean).join(' ')
           + ' (IP 기반 위치 — 실제 위치와 다를 수 있음, 정확한 GPS는 HTTPS 환경 필요)';
 
-        // 국소명은 자동입력하지 않는다 (항상 직접 입력)
-        loadWeatherData(lat, lon, statusEl, btn, shortName, fullAddress);
+        startWeatherPipeline(lat, lon, statusEl, btn, fullAddress);
       })
       .catch(() => {
         // IP 기반 위치까지 실패 → 진주 기본값
-        statusEl.textContent = '📍 위치 확인 불가 — 진주 기준으로 날씨 불러오는 중...';
-        statusEl.style.color = '#888';
-        loadWeatherData('35.1798', '128.1076', statusEl, btn, '진주시', '경상남도 진주시 (위치 확인 불가, 기본값)');
+        startWeatherPipeline('35.1798', '128.1076', statusEl, btn, '경상남도 진주시 (위치 확인 불가, 기본값)');
       });
   }
 
-  // Nominatim 역지오코딩 → 시/군/구 이름 및 상세 주소 반환
+  // Nominatim 역지오코딩 → 상세 주소 반환
   function reverseGeocode(lat, lon, callback) {
     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ko`)
       .then(r => r.json())
       .then(data => {
         const addr = data.address || {};
-        const shortName = addr.city || addr.town || addr.county || addr.village || addr.state || '현재위치';
         // 도 / 시·군 / 구 / 동·읍·면 까지만 (도로명·번지는 제외)
         const parts = [
           addr.state,                                        // 도 · 특별시 · 광역시
@@ -1668,14 +1665,10 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
           addr.suburb || addr.town || addr.village           // 동 · 읍 · 면
         ].filter(Boolean);
         const fullAddress = parts.filter((v, i) => parts.indexOf(v) === i).join(' ') || '현재위치';
-        callback(shortName, fullAddress);
+        callback(fullAddress);
       })
-      .catch(() => callback('현재위치', '현재위치'));
+      .catch(() => callback('현재위치'));
   }
-
-  // ── GPS 정확도 개선 설정 ──
-  const GEO_ACCURACY_TARGET = 50;    // 이 정확도(m) 이하면 즉시 확정
-  const GEO_MAX_WAIT        = 15000; // 최대 대기 시간(ms)
 
   function fetchWeather() {
     const statusEl = document.getElementById('weather_status');
@@ -1687,7 +1680,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     if (!window.isSecureContext) {
       statusEl.innerHTML = '🔒 HTTPS가 아니라 GPS를 쓸 수 없습니다 (파일 직접 열기). IP 기준으로 대체합니다.';
       statusEl.style.color = '#d9534f';
-      setTimeout(() => fetchWeatherByIP(statusEl, btn), 1500);
+      fetchWeatherByIP(statusEl, btn);
       return;
     }
 
@@ -1696,91 +1689,26 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
       return;
     }
 
-    statusEl.textContent = '📡 GPS 위치 확인 중... (실외·창가에서 더 정확합니다)';
+    statusEl.textContent = '📡 위치 확인 중...';
     statusEl.style.color = '#555';
 
-    let best = null;      // 지금까지 받은 가장 정확한 좌표
-    let done = false;
-    let watchId = null;
-
-    const stopWatching = () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-      }
-      clearTimeout(timer);
-    };
-
-    const finish = () => {
-      if (done) return;
-      done = true;
-      stopWatching();
-
-      if (!best) {
-        fetchWeatherByIP(statusEl, btn);
-        return;
-      }
-
-      const lat = best.coords.latitude.toFixed(5);
-      const lon = best.coords.longitude.toFixed(5);
-      const acc = Math.round(best.coords.accuracy);
-
-      statusEl.textContent = `📍 위치 확인 (오차 약 ${acc}m) — 날씨 불러오는 중...`;
-      statusEl.style.color = '#555';
-
-      reverseGeocode(lat, lon, (locationName, fullAddress) => {
-        // 국소명은 자동입력하지 않는다 (항상 직접 입력)
-        loadWeatherData(lat, lon, statusEl, btn, locationName, fullAddress);
-      });
-    };
-
-    // 최대 대기 시간이 지나면 그때까지 받은 값 중 가장 좋은 것으로 확정
-    const timer = setTimeout(finish, GEO_MAX_WAIT);
-
-    // getCurrentPosition 한 번이 아니라 watchPosition으로 좌표를 계속 받아
-    // 정확도가 좋아질 때까지 갱신한다 (모바일 초기 좌표는 오차가 큼)
-    watchId = navigator.geolocation.watchPosition(
+    // 정확도 수렴(watchPosition 반복 대기)을 기다리지 않고 첫 좌표를 바로 사용한다.
+    // 날씨 격자(기상청 5km, Open-Meteo)에는 수백m 오차가 문제되지 않아 체감 속도가 크게 빨라진다.
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
-        const acc = Math.round(best.coords.accuracy);
-        statusEl.textContent = `📡 위치 보정 중... (현재 오차 약 ${acc}m)`;
-        if (best.coords.accuracy <= GEO_ACCURACY_TARGET) finish();
+        const lat = pos.coords.latitude.toFixed(5);
+        const lon = pos.coords.longitude.toFixed(5);
+        startWeatherPipeline(lat, lon, statusEl, btn, null);
       },
       (err) => {
-        if (best) { finish(); return; }   // 이미 받은 좌표가 있으면 그대로 사용
-        done = true;
-        stopWatching();
-
         if (err.code === 1) {        // PERMISSION_DENIED
           statusEl.innerHTML = '⚠ 위치 권한이 거부되었습니다. 브라우저 설정 → 사이트 권한 → 위치를 허용해 주세요.';
           statusEl.style.color = '#d9534f';
-          setTimeout(() => fetchWeatherByIP(statusEl, btn), 2000);
-        } else {                     // POSITION_UNAVAILABLE / TIMEOUT
-          fetchWeatherByIP(statusEl, btn);
         }
+        fetchWeatherByIP(statusEl, btn);
       },
-      { enableHighAccuracy: true, timeout: GEO_MAX_WAIT, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
     );
-  }
-
-  // WMO/wttr.in 코드 → 한국어 날씨 설명
-  function getWeatherDesc(code) {
-    const c = Number(code);
-    if (c === 0 || c === 113)                  return '맑음';
-    if ([1,2,116].includes(c))                 return '대체로 맑음';
-    if ([3,119,122].includes(c))               return '흐림';
-    if ([45,48,143,248,260].includes(c))       return '안개';
-    if ([51,53,55,263,266].includes(c))        return '이슬비';
-    if ([56,57,281,284].includes(c))           return '어는 이슬비';
-    if ([61,63,293,296,299,302].includes(c))   return '비';
-    if ([65,305,308].includes(c))              return '강한 비';
-    if ([66,67,311,314].includes(c))           return '어는 비';
-    if ([71,73,75,77,323,326,329,332,335,338].includes(c)) return '눈';
-    if ([80,81,82,353,356,359].includes(c))    return '소나기';
-    if ([85,86,368,371].includes(c))           return '눈 소나기';
-    if ([95,386,389].includes(c))              return '뇌우';
-    if ([96,99,392,395].includes(c))           return '우박 뇌우';
-    return '날씨 확인 중';
   }
 
   // 날씨 체크박스 단일 선택
@@ -1789,12 +1717,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     if (el) el.checked = true;
   }
 
-  // 날씨 체크박스·온도 공통 적용
-  function applyWeatherResult(temp, apparent, code, wind, locationName, statusEl, btn, descFn, fullAddress) {
-    const cappedApparent = Math.min(apparent, temp + 3);
-    document.getElementById('real_temperature').value = temp + '°C';
-    document.getElementById('fake_temperature').value = cappedApparent + '°C';
-
+  function applyWeatherChecks(code) {
     ['weather_clear','weather_cloudy','weather_rain_or_snow'].forEach(v => {
       const el = document.querySelector(`input[value="${v}"]`);
       if (el) el.checked = false;
@@ -1803,61 +1726,43 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     const rainCodes = [51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99,
                        176,180,182,185,200,227,230,263,266,281,284,293,296,299,302,305,308,
                        311,314,317,320,323,326,329,332,335,338,350,353,356,359,362,365,368,371,374,377,386,389,392,395];
-    const isRainOrSnow = rainCodes.includes(code);
-    const isClear = [0,1,113].includes(code);
-    const isCloudy = [2,3,45,48,116,119,122,143,248,260].includes(code);
-
-    if (isClear)       setWeatherCheck('weather_clear');
-    if (isCloudy)      setWeatherCheck('weather_cloudy');
-    if (isRainOrSnow)  setWeatherCheck('weather_rain_or_snow');
-
-    autoCheckSeasonGear(cappedApparent);
-    checkHeatWaveWarning();
-    generateImage();
-
-    const addrLine = fullAddress
-      ? `<div style="font-weight:bold;color:#0b6;margin-bottom:2px;">📍 ${fullAddress}</div>` : '';
-    statusEl.innerHTML =
-      addrLine + `기온 ${temp}°C, 체감온도 ${cappedApparent}°C, 풍속 ${wind}m/s`;
-    statusEl.style.color = '#28a745';
-    btn.disabled = false;
-    document.getElementById('weather_details').open = true;
+    if (rainCodes.includes(code))                          setWeatherCheck('weather_rain_or_snow');
+    if ([0,1,113].includes(code))                          setWeatherCheck('weather_clear');
+    if ([2,3,45,48,116,119,122,143,248,260].includes(code)) setWeatherCheck('weather_cloudy');
   }
 
-  // ① Open-Meteo
-  function tryOpenMeteo(lat, lon, locationName, statusEl, btn, onFail, fullAddress) {
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Asia%2FSeoul`)
+  // ① Open-Meteo, 실패 시 wttr.in 대체
+  function fetchBaseWeather(lat, lon) {
+    return fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Asia%2FSeoul`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         const c = data.current;
-        applyWeatherResult(
-          Math.round(c.temperature_2m), Math.round(c.apparent_temperature),
-          c.weather_code, c.wind_speed_10m,
-          locationName, statusEl, btn, getWeatherDesc, fullAddress
-        );
-        refineWithKMA(lat, lon, statusEl, c.wind_speed_10m, fullAddress);
+        return {
+          temp: Math.round(c.temperature_2m),
+          apparent: Math.round(c.apparent_temperature),
+          code: c.weather_code,
+          wind: c.wind_speed_10m
+        };
       })
-      .catch(onFail);
+      .catch(() => fetchWttrWeather(lat, lon));
   }
 
-  // ② wttr.in (Open-Meteo 실패 시 대체)
-  function tryWttr(lat, lon, locationName, statusEl, btn, onFail, fullAddress) {
-    fetch(`https://wttr.in/${lat},${lon}?format=j1`)
+  function fetchWttrWeather(lat, lon) {
+    return fetch(`https://wttr.in/${lat},${lon}?format=j1`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         const c = data.current_condition[0];
-        const temp     = parseInt(c.temp_C);
-        const apparent = parseInt(c.FeelsLikeC);
-        const code     = parseInt(c.weatherCode);
-        const wind     = Math.round(parseInt(c.windspeedKmph) / 3.6); // km/h → m/s
-        applyWeatherResult(temp, apparent, code, wind, locationName + ' (wttr)', statusEl, btn, null, fullAddress);
-        refineWithKMA(lat, lon, statusEl, wind, fullAddress);
-      })
-      .catch(onFail);
+        return {
+          temp: parseInt(c.temp_C),
+          apparent: parseInt(c.FeelsLikeC),
+          code: parseInt(c.weatherCode),
+          wind: Math.round(parseInt(c.windspeedKmph) / 3.6) // km/h → m/s
+        };
+      });
   }
 
-  // ③ 기상청 초단기실황 (관측 기반 실측 기온으로 보정, 10분 단위 갱신)
-  // 국내 좌표에서만 유효하며 실패해도 위에서 이미 채운 Open-Meteo/wttr 값을 그대로 둔다.
+  // ② 기상청 초단기실황 (관측 기반 실측 기온, 10분 단위 갱신)
+  // 국내 좌표에서만 유효하며 실패해도 기본 날씨(Open-Meteo/wttr) 값을 그대로 둔다.
   const KMA_SERVICE_KEY = 'iqQ7WPQchHs4%2FnDC1tfzDDWv%2FU%2BnVXZDn4S87lp%2BQx80gTsehENekYaJw1V5EI2JZ5J9%2Bru77KLXRFb1OqNqHg%3D%3D';
 
   function dfsXyConv(lat, lon) {
@@ -1919,14 +1824,14 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     return tempC;
   }
 
-  function refineWithKMA(lat, lon, statusEl, wind, fullAddress) {
+  function fetchKmaWeather(lat, lon) {
     const { nx, ny } = dfsXyConv(parseFloat(lat), parseFloat(lon));
     const { base_date, base_time } = getKmaBaseDateTime();
     const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst`
       + `?serviceKey=${KMA_SERVICE_KEY}&pageNo=1&numOfRows=10&dataType=JSON`
       + `&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
 
-    fetch(url)
+    return fetch(url)
       .then(r => r.json())
       .then(data => {
         const header = data && data.response && data.response.header;
@@ -1934,44 +1839,79 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
 
         const map = {};
         data.response.body.items.item.forEach(it => { map[it.category] = it.obsrValue; });
-        const kmaTemp = Math.round(parseFloat(map.T1H));
-        if (isNaN(kmaTemp)) return;
-        const kmaRh   = parseFloat(map.REH);
-        const kmaWind = parseFloat(map.WSD);
+        const temp = Math.round(parseFloat(map.T1H));
+        if (isNaN(temp)) throw new Error('no T1H');
+        const rh   = parseFloat(map.REH);
+        const wind = parseFloat(map.WSD);
+        const apparent = Math.round(Math.min(calcKmaApparentTemp(temp, rh, wind), temp + 3));
 
-        const realEl = document.getElementById('real_temperature');
-        const fakeEl = document.getElementById('fake_temperature');
-
-        const kmaApparent = calcKmaApparentTemp(kmaTemp, kmaRh, kmaWind);
-        const cappedApparent = Math.round(Math.min(kmaApparent, kmaTemp + 3));
-
-        realEl.value = kmaTemp + '°C';
-        fakeEl.value = cappedApparent + '°C';
-
-        autoCheckSeasonGear(parseFloat(fakeEl.value));
-        checkHeatWaveWarning();
-        generateImage();
-
-        const addrLine = fullAddress
-          ? `<div style="font-weight:bold;color:#0b6;margin-bottom:2px;">📍 ${fullAddress}</div>` : '';
-        statusEl.innerHTML = addrLine + `기온 ${kmaTemp}°C, 체감온도 ${fakeEl.value}, 풍속 ${wind}m/s`;
-      })
-      .catch(() => { /* 실패 시 Open-Meteo/wttr 값 그대로 사용 */ });
+        return { temp, apparent, wind: isNaN(wind) ? null : Math.round(wind * 10) / 10 };
+      });
   }
 
-  function loadWeatherData(lat, lon, statusEl, btn, locationName, fullAddress) {
+  // 주소 조회·기본 날씨·기상청 실측치를 모두 동시에 요청하고, 도착하는 대로 즉시 반영한다.
+  // 기상청 실측값이 한 번이라도 적용되면(kmaApplied) 이후 기본 날씨 응답이 늦게 와도
+  // 기온/체감/풍속은 덮어쓰지 않고 하늘상태(맑음/흐림/비 등) 체크박스만 갱신한다.
+  function startWeatherPipeline(lat, lon, statusEl, btn, knownAddress) {
+    const state = { fullAddress: knownAddress, temp: null, apparent: null, wind: null, kmaApplied: false };
+
     statusEl.textContent = '🌤 날씨 정보 불러오는 중...';
     statusEl.style.color = '#555';
 
-    tryOpenMeteo(lat, lon, locationName, statusEl, btn, () => {
-      // Open-Meteo 실패 → wttr.in 시도
-      statusEl.textContent = '🔄 대체 서버로 재시도 중...';
-      tryWttr(lat, lon, locationName, statusEl, btn, () => {
-        statusEl.textContent = '⚠ 날씨 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
-        statusEl.style.color = '#d9534f';
+    function render() {
+      if (state.temp == null) return;
+      const addrLine = state.fullAddress
+        ? `<div style="font-weight:bold;color:#0b6;margin-bottom:2px;">📍 ${state.fullAddress}</div>` : '';
+      statusEl.innerHTML = addrLine + `기온 ${state.temp}°C, 체감온도 ${state.apparent}°C, 풍속 ${state.wind}m/s`;
+      statusEl.style.color = '#28a745';
+    }
+
+    if (knownAddress == null) {
+      reverseGeocode(lat, lon, (fullAddress) => {
+        state.fullAddress = fullAddress;
+        render();
+      });
+    }
+
+    fetchBaseWeather(lat, lon)
+      .then(w => {
+        if (!state.kmaApplied) {
+          state.temp = w.temp;
+          state.apparent = Math.min(w.apparent, w.temp + 3);
+          state.wind = w.wind;
+        }
+        applyWeatherChecks(w.code);
+        autoCheckSeasonGear(state.apparent);
+        checkHeatWaveWarning();
+        generateImage();
         btn.disabled = false;
-      }, fullAddress);
-    }, fullAddress);
+        document.getElementById('weather_details').open = true;
+        render();
+      })
+      .catch(() => {
+        if (state.temp == null) {
+          statusEl.textContent = '⚠ 날씨 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+          statusEl.style.color = '#d9534f';
+        }
+        btn.disabled = false;
+      });
+
+    fetchKmaWeather(lat, lon)
+      .then(k => {
+        state.kmaApplied = true;
+        state.temp = k.temp;
+        state.apparent = k.apparent;
+        if (k.wind != null) state.wind = k.wind;
+        document.getElementById('real_temperature').value = state.temp + '°C';
+        document.getElementById('fake_temperature').value = state.apparent + '°C';
+        autoCheckSeasonGear(state.apparent);
+        checkHeatWaveWarning();
+        generateImage();
+        btn.disabled = false;
+        document.getElementById('weather_details').open = true;
+        render();
+      })
+      .catch(() => { /* 실패 시 기본 날씨 값 그대로 사용 */ });
   }
 
   const WEATHER_VALUES = ['weather_clear','weather_cloudy','weather_wind','weather_rain_or_snow','weather_hot','weather_cold'];
