@@ -477,7 +477,7 @@ body.show-optional #sign_row{ display:flex; }
 </div>
 <label>국소명 <input type="text" id="location" oninput="generateImage()"></label>
 <label class="optional-field">작업공종 <input type="text" id="what_do" oninput="generateImage()"></label>
-<label>투입인원
+<label>투입인원 (반드시 이름으로 명시)
   <input type="text" id="inspector" oninput="onInspectorInput()" style="margin-top:5px;">
 </label>
 
@@ -536,7 +536,6 @@ body.show-optional #sign_row{ display:flex; }
     </button>
   </summary>
   <div id="weather_status" style="font-size:12px; color:#555; margin:6px 0 4px 0; min-height:16px;"></div>
-  <div style="font-size:11px; color:#999; margin:0 0 6px 0;">※ 모바일에서 파일을 직접 열면(file://) GPS가 차단되어 IP 기반 위치(부정확)로 대체됩니다. 정확한 GPS 위치가 필요하면 이 파일을 HTTPS 웹서버에 올려서 접속해야 합니다.</div>
   <div class="checkbox-group horizontal">
     <label><input type="checkbox" value="weather_clear" onchange="onWeatherChange(this)"> 맑음</label>
     <label><input type="checkbox" value="weather_cloudy" onchange="onWeatherChange(this)"> 흐림</label>
@@ -624,7 +623,7 @@ body.show-optional #sign_row{ display:flex; }
     <label><input type="checkbox" value="common_tool" checked onchange="generateImage()"> 공도구 사용 전 점검</label>
     <label><input type="checkbox" value="common_stop_work" checked onchange="generateImage()"> 작업중지 기준 준수</label>
     <label><input type="checkbox" value="common_danger" checked onchange="generateImage()"> 유해 위험요인 확인</label>
-    <label><input type="checkbox" value="common_heavy" onchange="generateImage()"> 중량물 취급 사항 확인</label>
+    <label><input type="checkbox" value="common_heavy" checked onchange="generateImage()"> 중량물 취급 사항 확인</label>
   </div>
 </details>
 
@@ -867,14 +866,13 @@ function hideInstallBar() {
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  if (!isStandalone && localStorage.getItem('install_dismissed') !== '1') {
+  if (!isStandalone) {
     document.getElementById('install-bar').style.display = 'flex';
   }
 });
 
 window.addEventListener('appinstalled', () => {
   hideInstallBar();
-  localStorage.setItem('install_dismissed', '1');
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -885,7 +883,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!bar) return;
 
   // 아이폰은 설치 프롬프트가 없으므로 안내 배너를 직접 띄운다
-  if (isIOS && !isStandalone && localStorage.getItem('install_dismissed') !== '1') {
+  if (isIOS && !isStandalone) {
     document.getElementById('install-text').textContent =
       '홈 화면에 추가하면 앱처럼 쓸 수 있습니다. 방법 보기';
     bar.style.display = 'flex';
@@ -905,7 +903,6 @@ document.addEventListener('DOMContentLoaded', () => {
   close.onclick = () => {
     hideInstallBar();
     if (guide) guide.style.display = 'none';
-    localStorage.setItem('install_dismissed', '1');
   };
 });
 
@@ -1818,11 +1815,10 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     checkHeatWaveWarning();
     generateImage();
 
-    const desc = descFn ? descFn(code) : getWeatherDesc(code);
     const addrLine = fullAddress
       ? `<div style="font-weight:bold;color:#0b6;margin-bottom:2px;">📍 ${fullAddress}</div>` : '';
     statusEl.innerHTML =
-      addrLine + `${desc}, 기온 ${temp}°C, 체감 ${cappedApparent}°C, 풍속 ${wind}m/s`;
+      addrLine + `기온 ${temp}°C, 체감온도 ${cappedApparent}°C, 풍속 ${wind}m/s`;
     statusEl.style.color = '#28a745';
     btn.disabled = false;
     document.getElementById('weather_details').open = true;
@@ -1839,6 +1835,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
           c.weather_code, c.wind_speed_10m,
           locationName, statusEl, btn, getWeatherDesc, fullAddress
         );
+        refineWithKMA(lat, lon, statusEl, c.wind_speed_10m, fullAddress);
       })
       .catch(onFail);
   }
@@ -1854,8 +1851,112 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
         const code     = parseInt(c.weatherCode);
         const wind     = Math.round(parseInt(c.windspeedKmph) / 3.6); // km/h → m/s
         applyWeatherResult(temp, apparent, code, wind, locationName + ' (wttr)', statusEl, btn, null, fullAddress);
+        refineWithKMA(lat, lon, statusEl, wind, fullAddress);
       })
       .catch(onFail);
+  }
+
+  // ③ 기상청 초단기실황 (관측 기반 실측 기온으로 보정, 10분 단위 갱신)
+  // 국내 좌표에서만 유효하며 실패해도 위에서 이미 채운 Open-Meteo/wttr 값을 그대로 둔다.
+  const KMA_SERVICE_KEY = 'iqQ7WPQchHs4%2FnDC1tfzDDWv%2FU%2BnVXZDn4S87lp%2BQx80gTsehENekYaJw1V5EI2JZ5J9%2Bru77KLXRFb1OqNqHg%3D%3D';
+
+  function dfsXyConv(lat, lon) {
+    const RE = 6371.00877, GRID = 5.0;
+    const SLAT1 = 30.0, SLAT2 = 60.0, OLON = 126.0, OLAT = 38.0, XO = 43, YO = 136;
+    const DEGRAD = Math.PI / 180.0;
+    const re = RE / GRID;
+    const slat1 = SLAT1 * DEGRAD, slat2 = SLAT2 * DEGRAD;
+    const olon = OLON * DEGRAD, olat = OLAT * DEGRAD;
+
+    let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+    sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
+    let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+    sf = Math.pow(sf, sn) * Math.cos(slat1) / sn;
+    let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
+    ro = re * sf / Math.pow(ro, sn);
+
+    let ra = Math.tan(Math.PI * 0.25 + (lat * DEGRAD) * 0.5);
+    ra = re * sf / Math.pow(ra, sn);
+    let theta = lon * DEGRAD - olon;
+    if (theta > Math.PI) theta -= 2.0 * Math.PI;
+    if (theta < -Math.PI) theta += 2.0 * Math.PI;
+    theta *= sn;
+
+    return {
+      nx: Math.floor(ra * Math.sin(theta) + XO + 0.5),
+      ny: Math.floor(ro - ra * Math.cos(theta) + YO + 0.5)
+    };
+  }
+
+  // 초단기실황은 매시 40분경 관측자료가 확정된다 → 40분 이전이면 이전 시각 기준으로 조회
+  function getKmaBaseDateTime() {
+    const now = new Date();
+    if (now.getMinutes() < 40) now.setHours(now.getHours() - 1);
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    return { base_date: `${yyyy}${mm}${dd}`, base_time: `${hh}00` };
+  }
+
+  // 기상청 공식 체감온도 계산
+  //   여름철(5~9월): 열지수 기반 공식 (Stull 습구온도 근사식 사용)
+  //   겨울철(11~3월, 기온 10℃ 이하·풍속 1.3m/s 이상): 풍속냉각 공식
+  //   그 외 기간/조건: 기온을 그대로 체감온도로 사용 (기상청도 별도 보정 없음)
+  function calcKmaApparentTemp(tempC, rh, windMs) {
+    const month = new Date().getMonth() + 1;
+    if (month >= 5 && month <= 9 && !isNaN(rh)) {
+      const Tw = tempC * Math.atan(0.151977 * Math.sqrt(rh + 8.313659))
+        + Math.atan(tempC + rh) - Math.atan(rh - 1.676331)
+        + 0.00391838 * Math.pow(rh, 1.5) * Math.atan(0.023101 * rh)
+        - 4.686035;
+      return -0.2442 + 0.55399 * Tw + 0.45535 * tempC - 0.0022 * Tw * Tw + 0.00278 * Tw * tempC + 3.0;
+    }
+    if ((month === 11 || month === 12 || month <= 3) && tempC <= 10 && windMs >= 1.3) {
+      const V = Math.pow(windMs * 3.6, 0.16);
+      return 13.12 + 0.6215 * tempC - 11.37 * V + 0.3965 * tempC * V;
+    }
+    return tempC;
+  }
+
+  function refineWithKMA(lat, lon, statusEl, wind, fullAddress) {
+    const { nx, ny } = dfsXyConv(parseFloat(lat), parseFloat(lon));
+    const { base_date, base_time } = getKmaBaseDateTime();
+    const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst`
+      + `?serviceKey=${KMA_SERVICE_KEY}&pageNo=1&numOfRows=10&dataType=JSON`
+      + `&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        const header = data && data.response && data.response.header;
+        if (!header || header.resultCode !== '00') throw new Error(header && header.resultMsg);
+
+        const map = {};
+        data.response.body.items.item.forEach(it => { map[it.category] = it.obsrValue; });
+        const kmaTemp = Math.round(parseFloat(map.T1H));
+        if (isNaN(kmaTemp)) return;
+        const kmaRh   = parseFloat(map.REH);
+        const kmaWind = parseFloat(map.WSD);
+
+        const realEl = document.getElementById('real_temperature');
+        const fakeEl = document.getElementById('fake_temperature');
+
+        const kmaApparent = calcKmaApparentTemp(kmaTemp, kmaRh, kmaWind);
+        const cappedApparent = Math.round(Math.min(kmaApparent, kmaTemp + 3));
+
+        realEl.value = kmaTemp + '°C';
+        fakeEl.value = cappedApparent + '°C';
+
+        autoCheckSeasonGear(parseFloat(fakeEl.value));
+        checkHeatWaveWarning();
+        generateImage();
+
+        const addrLine = fullAddress
+          ? `<div style="font-weight:bold;color:#0b6;margin-bottom:2px;">📍 ${fullAddress}</div>` : '';
+        statusEl.innerHTML = addrLine + `기온 ${kmaTemp}°C, 체감온도 ${fakeEl.value}, 풍속 ${wind}m/s`;
+      })
+      .catch(() => { /* 실패 시 Open-Meteo/wttr 값 그대로 사용 */ });
   }
 
   function loadWeatherData(lat, lon, statusEl, btn, locationName, fullAddress) {
@@ -2082,6 +2183,11 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
         });
       }
     }
+
+    // 작업장 환경 체크로 인해 자동 변경된 현장특성/위험요인은 다른 섹션의
+    // change 리스너로 버블링되지 않으므로 여기서 직접 저장해야 새로고침 후에도 유지된다.
+    saveByValues('auto_site_char', SITE_CHAR_VALUES);
+    saveByValues('auto_risk', RISK_VALUES);
 
     generateImage();
   }
