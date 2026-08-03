@@ -578,12 +578,7 @@ body.show-optional #sign_row{ display:flex; }
 <label class="optional-field">유도자 이름 <input type="text" id="whatch_me" oninput="generateImage()"></label>
 <label class="optional-field">협력사 비상연락망 <input type="text" id="company_sos" oninput="generateImage()"></label>
 <label>도급사 관리감독자 비상연락망
-  <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
-    <input type="text" id="mother_company_sos" value="장진표 010-8963-1739" oninput="onMotherSosInput()" style="flex:1; margin-top:0;">
-    <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin-bottom:0; white-space:nowrap;">
-      <input type="checkbox" id="mother_sos_autosave" style="width:16px;height:16px;" onchange="onMotherSosAutoSaveToggle()"> 자동저장
-    </label>
-  </div>
+  <input type="text" id="mother_company_sos" value="장진표 010-8963-1739" oninput="onMotherSosInput()">
 </label>
 
 <details id="details_site_char">
@@ -628,12 +623,7 @@ body.show-optional #sign_row{ display:flex; }
 </details>
 
 <details>
-  <summary style="display:flex; align-items:center; justify-content:space-between;">
-    <span>혹서기 용품 지참유무</span>
-    <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin:0; white-space:nowrap;" onclick="event.stopPropagation()">
-      <input type="checkbox" id="hot_autosave" style="width:16px;height:16px;" onchange="onHotAutoSaveToggle()"> 자동저장
-    </label>
-  </summary>
+  <summary>혹서기 용품 지참유무</summary>
   <div class="checkbox-group">
     <label><input type="checkbox" id="hot_thermometer" value="hot_thermometer" onchange="onHotChange()"> 온습도계</label>
     <label><input type="checkbox" id="hot_water" value="hot_water" onchange="onHotChange()"> 얼음물</label>
@@ -648,12 +638,7 @@ body.show-optional #sign_row{ display:flex; }
 </details>
 
 <details>
-  <summary style="display:flex; align-items:center; justify-content:space-between;">
-    <span>혹한기 용품 지참유무</span>
-    <label style="flex-direction:row; align-items:center; font-weight:normal; font-size:12px; gap:4px; margin:0; white-space:nowrap;" onclick="event.stopPropagation()">
-      <input type="checkbox" id="cold_autosave" style="width:16px;height:16px;" onchange="onColdAutoSaveToggle()"> 자동저장
-    </label>
-  </summary>
+  <summary>혹한기 용품 지참유무</summary>
   <div class="checkbox-group">
     <label><input type="checkbox" id="cold_warmer" value="cold_warmer" onchange="onColdChange()"> 핫팩</label>
     <label><input type="checkbox" id="cold_cloth" value="cold_cloth" onchange="onColdChange()"> 발열조끼</label>
@@ -1252,23 +1237,11 @@ function toDatetimeLocal(date) {
     generateImage();
   }
 
-  // ── 도급사 관리감독자 비상연락망 자동저장 ──
+  // ── 도급사 관리감독자 비상연락망 자동저장 (상시) ──
   function onMotherSosInput() {
     generateImage();
-    if (document.getElementById('mother_sos_autosave').checked) {
-      localStorage.setItem('mother_sos_value', document.getElementById('mother_company_sos').value);
-    }
+    localStorage.setItem('mother_sos_value', document.getElementById('mother_company_sos').value);
   }
-  function onMotherSosAutoSaveToggle() {
-    if (document.getElementById('mother_sos_autosave').checked) {
-      localStorage.setItem('mother_sos_autosave', 'true');
-      localStorage.setItem('mother_sos_value', document.getElementById('mother_company_sos').value);
-    } else {
-      localStorage.removeItem('mother_sos_autosave');
-      localStorage.removeItem('mother_sos_value');
-    }
-  }
-
   // ── 현장 특이사항 자동저장 ──
   function onSiteEctInput() {
     generateImage();
@@ -1286,26 +1259,16 @@ function toDatetimeLocal(date) {
     }
   }
 
-  // ── 혹서기 자동저장 ──
+  // ── 혹서기 자동저장 (상시) ──
   const HOT_IDS = ['hot_thermometer','hot_water','hot_icebox','hot_candy','hot_rest','hot_ect_cb'];
   function onHotChange() {
     generateImage();
-    if (document.getElementById('hot_autosave').checked) saveHotData();
+    saveHotData();
   }
   function saveHotData() {
     const vals = HOT_IDS.map(id => document.getElementById(id)?.checked ? '1' : '0');
     localStorage.setItem('hot_checks', vals.join(','));
     localStorage.setItem('hot_ect_text', document.getElementById('hot_ect_text').value);
-  }
-  function onHotAutoSaveToggle() {
-    if (document.getElementById('hot_autosave').checked) {
-      localStorage.setItem('hot_autosave', 'true');
-      saveHotData();
-    } else {
-      localStorage.removeItem('hot_autosave');
-      localStorage.removeItem('hot_checks');
-      localStorage.removeItem('hot_ect_text');
-    }
   }
   function loadHotData() {
     const saved = localStorage.getItem('hot_checks');
@@ -1322,26 +1285,16 @@ function toDatetimeLocal(date) {
     }
   }
 
-  // ── 혹한기 자동저장 ──
+  // ── 혹한기 자동저장 (상시) ──
   const COLD_IDS = ['cold_warmer','cold_cloth','cold_ect_cb'];
   function onColdChange() {
     generateImage();
-    if (document.getElementById('cold_autosave').checked) saveColdData();
+    saveColdData();
   }
   function saveColdData() {
     const vals = COLD_IDS.map(id => document.getElementById(id)?.checked ? '1' : '0');
     localStorage.setItem('cold_checks', vals.join(','));
     localStorage.setItem('cold_ect_text', document.getElementById('cold_ect_text').value);
-  }
-  function onColdAutoSaveToggle() {
-    if (document.getElementById('cold_autosave').checked) {
-      localStorage.setItem('cold_autosave', 'true');
-      saveColdData();
-    } else {
-      localStorage.removeItem('cold_autosave');
-      localStorage.removeItem('cold_checks');
-      localStorage.removeItem('cold_ect_text');
-    }
   }
   function loadColdData() {
     const saved = localStorage.getItem('cold_checks');
@@ -1412,6 +1365,21 @@ function toDatetimeLocal(date) {
     }
   ];
 
+  // 폭염 체크박스: 위 HEATWAVE_LEVELS(공식 폭염특보 기준)를 그대로 재사용한다.
+  // 한파 체크박스: 기상청 한파특보는 아침 최저기온이 여러 날 지속될지를 예보로 판정하므로
+  //   순간 관측값만으로는 공식 기준과 똑같이 판정할 수 없다. 체감온도가 일정 수준 이하면
+  //   체크하는 근사 기준을 사용한다(공식 특보 발령 여부와 다를 수 있음).
+  const COLD_WAVE_APPARENT_THRESHOLD = -12;
+
+  function applySeasonWarningChecks(apparent, real) {
+    const apparentSafe = isNaN(apparent) ? -Infinity : apparent;
+    const realSafe = isNaN(real) ? -Infinity : real;
+    const hotEl = document.querySelector('input[value="weather_hot"]');
+    const coldEl = document.querySelector('input[value="weather_cold"]');
+    if (hotEl)  hotEl.checked  = HEATWAVE_LEVELS.some(l => l.match(apparentSafe, realSafe));
+    if (coldEl) coldEl.checked = apparentSafe <= COLD_WAVE_APPARENT_THRESHOLD;
+  }
+
   // 직전에 자동으로 삽입한 문구를 기억해 둔다.
   // 사용자가 직접 입력/수정한 내용과 구분해서, 자동 문구만 안전하게 갱신·해제하기 위함.
   // (새로고침 후에도 구분이 가능하도록 localStorage에도 함께 보관한다)
@@ -1478,24 +1446,15 @@ function toDatetimeLocal(date) {
       document.getElementById('sign_autosave').checked = true;
       loadSavedSign();
     }
-    if (localStorage.getItem('hot_autosave') === 'true') {
-      document.getElementById('hot_autosave').checked = true;
-      loadHotData();
-    }
-    if (localStorage.getItem('cold_autosave') === 'true') {
-      document.getElementById('cold_autosave').checked = true;
-      loadColdData();
-    }
+    loadHotData();
+    loadColdData();
     if (localStorage.getItem('site_ect_autosave') === 'true') {
       document.getElementById('site_ect_autosave').checked = true;
       const saved = localStorage.getItem('site_ect_text');
       if (saved) document.getElementById('site_site_ect_text').value = saved;
     }
-    if (localStorage.getItem('mother_sos_autosave') === 'true') {
-      document.getElementById('mother_sos_autosave').checked = true;
-      const saved = localStorage.getItem('mother_sos_value');
-      if (saved) document.getElementById('mother_company_sos').value = saved;
-    }
+    const savedMotherSos = localStorage.getItem('mother_sos_value');
+    if (savedMotherSos) document.getElementById('mother_company_sos').value = savedMotherSos;
   });
 function toggleChildrenVisible(parentCheckbox, groupClass) {
   const group = document.querySelector('.' + groupClass);
@@ -1717,11 +1676,19 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     if (el) el.checked = true;
   }
 
-  function applyWeatherChecks(code) {
-    ['weather_clear','weather_cloudy','weather_rain_or_snow'].forEach(v => {
+  // 기상청 강풍주의보 기준: 평균풍속 14m/s 이상
+  const KMA_STRONG_WIND_MS = 14;
+
+  function resetWeatherSkyChecks() {
+    ['weather_clear','weather_cloudy','weather_rain_or_snow','weather_wind'].forEach(v => {
       const el = document.querySelector(`input[value="${v}"]`);
       if (el) el.checked = false;
     });
+  }
+
+  // Open-Meteo/wttr 날씨코드 기준 (기상청 조회 실패 시의 안전망 전용)
+  function applyWeatherChecks(code, wind) {
+    resetWeatherSkyChecks();
 
     const rainCodes = [51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99,
                        176,180,182,185,200,227,230,263,266,281,284,293,296,299,302,305,308,
@@ -1729,6 +1696,18 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     if (rainCodes.includes(code))                          setWeatherCheck('weather_rain_or_snow');
     if ([0,1,113].includes(code))                          setWeatherCheck('weather_clear');
     if ([2,3,45,48,116,119,122,143,248,260].includes(code)) setWeatherCheck('weather_cloudy');
+    if (wind != null && wind >= KMA_STRONG_WIND_MS)         setWeatherCheck('weather_wind');
+  }
+
+  // 기상청 실측/예보 기준 (PTY 강수형태 + SKY 하늘상태 + WSD 풍속)
+  function applyKmaWeatherChecks(pty, sky, wind) {
+    resetWeatherSkyChecks();
+
+    if (pty && pty !== 0) setWeatherCheck('weather_rain_or_snow');
+    else if (sky === 1)   setWeatherCheck('weather_clear');
+    else if (sky === 3 || sky === 4) setWeatherCheck('weather_cloudy');
+
+    if (wind != null && wind >= KMA_STRONG_WIND_MS) setWeatherCheck('weather_wind');
   }
 
   // ① Open-Meteo, 실패 시 wttr.in 대체
@@ -1824,6 +1803,39 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     return tempC;
   }
 
+  // 초단기예보(SKY 하늘상태 포함)는 매시 45분에 생성되어 그 시점부터 조회 가능하다.
+  function getKmaFcstBaseDateTime() {
+    const now = new Date();
+    if (now.getMinutes() < 45) now.setHours(now.getHours() - 1);
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    return { base_date: `${yyyy}${mm}${dd}`, base_time: `${hh}30` };
+  }
+
+  // SKY(1맑음/3구름많음/4흐림)는 초단기실황에 없어 초단기예보에서 가장 가까운 시각 값을 가져온다.
+  function fetchKmaSky(lat, lon) {
+    const { nx, ny } = dfsXyConv(parseFloat(lat), parseFloat(lon));
+    const { base_date, base_time } = getKmaFcstBaseDateTime();
+    const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst`
+      + `?serviceKey=${KMA_SERVICE_KEY}&pageNo=1&numOfRows=60&dataType=JSON`
+      + `&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+
+    return fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        const header = data && data.response && data.response.header;
+        if (!header || header.resultCode !== '00') throw new Error(header && header.resultMsg);
+
+        const skyItems = data.response.body.items.item
+          .filter(it => it.category === 'SKY')
+          .sort((a, b) => a.fcstTime.localeCompare(b.fcstTime));
+        if (!skyItems.length) throw new Error('no SKY');
+        return parseInt(skyItems[0].fcstValue);
+      });
+  }
+
   function fetchKmaWeather(lat, lon) {
     const { nx, ny } = dfsXyConv(parseFloat(lat), parseFloat(lon));
     const { base_date, base_time } = getKmaBaseDateTime();
@@ -1831,7 +1843,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
       + `?serviceKey=${KMA_SERVICE_KEY}&pageNo=1&numOfRows=10&dataType=JSON`
       + `&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
 
-    return fetch(url)
+    const ncstPromise = fetch(url)
       .then(r => r.json())
       .then(data => {
         const header = data && data.response && data.response.header;
@@ -1843,17 +1855,33 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
         if (isNaN(temp)) throw new Error('no T1H');
         const rh   = parseFloat(map.REH);
         const wind = parseFloat(map.WSD);
+        const pty  = parseInt(map.PTY);
         const apparent = Math.round(Math.min(calcKmaApparentTemp(temp, rh, wind), temp + 3));
 
-        return { temp, apparent, wind: isNaN(wind) ? null : Math.round(wind * 10) / 10 };
+        return {
+          temp, apparent,
+          wind: isNaN(wind) ? null : Math.round(wind * 10) / 10,
+          pty: isNaN(pty) ? 0 : pty
+        };
       });
+
+    // SKY는 별도 API(초단기예보)라 실패해도 기온 정보는 그대로 살린다.
+    return Promise.all([ncstPromise, fetchKmaSky(lat, lon).catch(() => null)])
+      .then(([ncst, sky]) => ({ ...ncst, sky }));
   }
 
   // 주소 조회·기본 날씨·기상청 실측치를 모두 동시에 요청하고, 도착하는 대로 즉시 반영한다.
   // 기상청 실측값이 한 번이라도 적용되면(kmaApplied) 이후 기본 날씨 응답이 늦게 와도
   // 기온/체감/풍속은 덮어쓰지 않고 하늘상태(맑음/흐림/비 등) 체크박스만 갱신한다.
+  // 기온/체감/풍속은 무조건 기상청(KMA) 실측값을 기준으로 표시한다.
+  // Open-Meteo/wttr는 하늘상태(맑음·흐림·비/눈) 판정 용도로만 쓰고,
+  // 기상청 조회가 실패했을 때만 안전망으로 그 값을 대신 사용한다.
   function startWeatherPipeline(lat, lon, statusEl, btn, knownAddress) {
-    const state = { fullAddress: knownAddress, temp: null, apparent: null, wind: null, kmaApplied: false };
+    const state = {
+      fullAddress: knownAddress, temp: null, apparent: null, wind: null,
+      kmaStatus: 'pending',   // 'pending' | 'success' | 'failed'
+      baseWeather: null
+    };
 
     statusEl.textContent = '🌤 날씨 정보 불러오는 중...';
     statusEl.style.color = '#555';
@@ -1866,6 +1894,18 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
       statusEl.style.color = '#28a745';
     }
 
+    function applyBaseAsFallback(w) {
+      applyWeatherChecks(w.code, w.wind);
+      state.temp = w.temp;
+      state.apparent = Math.min(w.apparent, w.temp + 3);
+      state.wind = w.wind;
+      autoCheckSeasonGear(state.apparent);
+      checkHeatWaveWarning();
+      applySeasonWarningChecks(state.apparent, state.temp);
+      generateImage();
+      render();
+    }
+
     if (knownAddress == null) {
       reverseGeocode(lat, lon, (fullAddress) => {
         state.fullAddress = fullAddress;
@@ -1875,21 +1915,15 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
 
     fetchBaseWeather(lat, lon)
       .then(w => {
-        if (!state.kmaApplied) {
-          state.temp = w.temp;
-          state.apparent = Math.min(w.apparent, w.temp + 3);
-          state.wind = w.wind;
-        }
-        applyWeatherChecks(w.code);
-        autoCheckSeasonGear(state.apparent);
-        checkHeatWaveWarning();
+        state.baseWeather = w;
         generateImage();
         btn.disabled = false;
         document.getElementById('weather_details').open = true;
-        render();
+        // 기상청이 이미 성공했으면 체크박스·기온 모두 손대지 않고, 실패가 확정된 경우에만 대체 표시한다.
+        if (state.kmaStatus === 'failed') applyBaseAsFallback(w);
       })
       .catch(() => {
-        if (state.temp == null) {
+        if (state.kmaStatus === 'failed' && state.temp == null) {
           statusEl.textContent = '⚠ 날씨 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
           statusEl.style.color = '#d9534f';
         }
@@ -1898,20 +1932,26 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
 
     fetchKmaWeather(lat, lon)
       .then(k => {
-        state.kmaApplied = true;
+        state.kmaStatus = 'success';
         state.temp = k.temp;
         state.apparent = k.apparent;
         if (k.wind != null) state.wind = k.wind;
         document.getElementById('real_temperature').value = state.temp + '°C';
         document.getElementById('fake_temperature').value = state.apparent + '°C';
+        applyKmaWeatherChecks(k.pty, k.sky, k.wind);
         autoCheckSeasonGear(state.apparent);
         checkHeatWaveWarning();
+        applySeasonWarningChecks(state.apparent, state.temp);
         generateImage();
         btn.disabled = false;
         document.getElementById('weather_details').open = true;
         render();
       })
-      .catch(() => { /* 실패 시 기본 날씨 값 그대로 사용 */ });
+      .catch(() => {
+        state.kmaStatus = 'failed';
+        // 기상청 실패 확정 시점에 기본 날씨가 이미 도착해 있었다면 그걸로 대체 표시(체크박스 포함)
+        if (state.baseWeather) applyBaseAsFallback(state.baseWeather);
+      });
   }
 
   const WEATHER_VALUES = ['weather_clear','weather_cloudy','weather_wind','weather_rain_or_snow','weather_hot','weather_cold'];
