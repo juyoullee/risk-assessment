@@ -552,7 +552,7 @@ body.show-optional #sign_row{ display:flex; }
     <input type="text" id="fake_temperature" oninput="onFakeTemperatureInput()">
   </label>
   <label style="flex:1 1 0; min-width:0; margin-bottom:0;">기온
-    <input type="text" id="real_temperature" oninput="generateImage()">
+    <input type="text" id="real_temperature" oninput="generateImage(); checkHeatWaveWarning();">
   </label>
 </div>
 
@@ -1388,6 +1388,86 @@ function toDatetimeLocal(date) {
   function onFakeTemperatureInput() {
     generateImage();
     autoCheckSeasonGear(document.getElementById('fake_temperature').value);
+    checkHeatWaveWarning();
+  }
+
+  // ── 폭염특보 기준 자동 입력 (추가 위험요인 및 대책) ──
+  // 기상청 폭염특보 기준:
+  //   폭염주의보   : 체감온도 33℃ 이상
+  //   폭염경보     : 체감온도 35℃ 이상
+  //   폭염중대경보 : 체감온도 38℃ 이상 (또는 실제 기온 39℃ 이상)
+  // 판정 우선순위는 중대경보 > 경보 > 주의보 순으로 확인한다.
+  const HEATWAVE_LEVELS = [
+    {
+      match: (apparent, real) => apparent >= 38 || real >= 39,
+      point: t => `폭염중대경보(체감온도 ${t}℃) 발령지역`,
+      todo: '작업 즉시중단/냉방시설로 대피/작업 중지권 즉시 실행'
+    },
+    {
+      match: (apparent) => apparent >= 35,
+      point: t => `폭염경보 (체감온도 ${t}℃) 발령 지역`,
+      todo: '팀장 승인하 20분 이내 필수 작업 실시 후 폭염 기본수칙(물/그늘/휴식) 즉시 이행'
+    },
+    {
+      match: (apparent) => apparent >= 33,
+      point: t => `폭염주의보 (체감온도 ${t}℃) 발령 지역`,
+      todo: '팀장 승인하 20분 이내 필수작업 실시 후 폭염 기본수칙(물/그늘/휴식) 실천'
+    }
+  ];
+
+  // 직전에 자동으로 삽입한 문구를 기억해 둔다.
+  // 사용자가 직접 입력/수정한 내용과 구분해서, 자동 문구만 안전하게 갱신·해제하기 위함.
+  // (새로고침 후에도 구분이 가능하도록 localStorage에도 함께 보관한다)
+  let _lastAutoHeatText = null;
+  {
+    const savedAutoPoint = localStorage.getItem('danger_ect_auto_point');
+    const savedAutoTodo  = localStorage.getItem('danger_ect_auto_todo');
+    if (savedAutoPoint || savedAutoTodo) {
+      _lastAutoHeatText = { point: savedAutoPoint || '', todo: savedAutoTodo || '' };
+    }
+  }
+
+  function checkHeatWaveWarning() {
+    const pointEl = document.getElementById('danger_ect_point');
+    const todoEl  = document.getElementById('danger_ect_todo');
+    if (!pointEl || !todoEl) return;
+
+    const apparent = parseFloat(document.getElementById('fake_temperature').value);
+    const real     = parseFloat(document.getElementById('real_temperature').value);
+    const apparentSafe = isNaN(apparent) ? -Infinity : apparent;
+    const realSafe      = isNaN(real) ? -Infinity : real;
+    if (apparentSafe === -Infinity && realSafe === -Infinity) return;
+
+    const level = HEATWAVE_LEVELS.find(l => l.match(apparentSafe, realSafe));
+
+    if (level) {
+      const baseTemp = !isNaN(apparent) ? apparent : real;
+      const newPoint = level.point(baseTemp);
+      const newTodo  = level.todo;
+
+      // 필드가 비어있거나, 이전에 자동으로 넣어둔 문구와 같을 때만 덮어쓴다.
+      // 사용자가 직접 다른 내용을 입력해 두었다면 건드리지 않는다.
+      const pointIsAuto = !pointEl.value || (_lastAutoHeatText && pointEl.value === _lastAutoHeatText.point);
+      const todoIsAuto  = !todoEl.value  || (_lastAutoHeatText && todoEl.value === _lastAutoHeatText.todo);
+
+      if (pointIsAuto) pointEl.value = newPoint;
+      if (todoIsAuto)  todoEl.value  = newTodo;
+
+      _lastAutoHeatText = { point: newPoint, todo: newTodo };
+      localStorage.setItem('danger_ect_auto_point', newPoint);
+      localStorage.setItem('danger_ect_auto_todo', newTodo);
+    } else if (_lastAutoHeatText) {
+      // 특보 해제: 직전에 자동으로 넣어둔 문구가 그대로 남아있으면 지운다.
+      if (pointEl.value === _lastAutoHeatText.point) pointEl.value = '';
+      if (todoEl.value === _lastAutoHeatText.todo) todoEl.value = '';
+      _lastAutoHeatText = null;
+      localStorage.removeItem('danger_ect_auto_point');
+      localStorage.removeItem('danger_ect_auto_todo');
+    }
+
+    localStorage.setItem('danger_ect_point', pointEl.value);
+    localStorage.setItem('danger_ect_todo', todoEl.value);
+    generateImage();
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -1735,6 +1815,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     if (isRainOrSnow)  setWeatherCheck('weather_rain_or_snow');
 
     autoCheckSeasonGear(cappedApparent);
+    checkHeatWaveWarning();
     generateImage();
 
     const desc = descFn ? descFn(code) : getWeatherDesc(code);
