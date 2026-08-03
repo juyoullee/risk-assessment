@@ -1651,22 +1651,33 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     statusEl.textContent = '📡 위치 확인 중...';
     statusEl.style.color = '#555';
 
+    const onSuccess = (pos) => {
+      const lat = pos.coords.latitude.toFixed(5);
+      const lon = pos.coords.longitude.toFixed(5);
+      startWeatherPipeline(lat, lon, statusEl, btn, null);
+    };
+
     // 정확도 수렴(watchPosition 반복 대기)을 기다리지 않고 첫 좌표를 바로 사용한다.
     // 날씨 격자(기상청 5km, Open-Meteo)에는 수백m 오차가 문제되지 않아 체감 속도가 크게 빨라진다.
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude.toFixed(5);
-        const lon = pos.coords.longitude.toFixed(5);
-        startWeatherPipeline(lat, lon, statusEl, btn, null);
-      },
+      onSuccess,
       (err) => {
-        if (err.code === 1) {        // PERMISSION_DENIED
+        if (err.code === 1) {        // PERMISSION_DENIED — 재시도해도 소용없으니 바로 IP로
           statusEl.innerHTML = '⚠ 위치 권한이 거부되었습니다. 브라우저 설정 → 사이트 권한 → 위치를 허용해 주세요.';
           statusEl.style.color = '#d9534f';
+          fetchWeatherByIP(statusEl, btn);
+          return;
         }
-        fetchWeatherByIP(statusEl, btn);
+        // 네트워크 기반 위치(옥상·실외 등 와이파이/기지국 정보가 부족한 현장)가 실패하면
+        // 정밀 GPS로 한 번 더 시도한 뒤에야 IP 기반으로 넘어간다.
+        statusEl.textContent = '📡 위치 재확인 중... (정밀 GPS)';
+        navigator.geolocation.getCurrentPosition(
+          onSuccess,
+          () => fetchWeatherByIP(statusEl, btn),
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
       },
-      { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
     );
   }
 
