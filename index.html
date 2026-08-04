@@ -920,13 +920,13 @@ function toggleEtc(cbId, wrapId) {
   generateImage();
 }
 
-function drawTextAuto(text, x, y, maxWidth, maxFont) {
+function drawTextAuto(text, x, y, maxWidth, maxFont, bold) {
   if (!text) return;
   let size = maxFont;
-  ctx.font = `${size}px sans-serif`;
+  ctx.font = `${bold ? 'bold ' : ''}${size}px sans-serif`;
   while (ctx.measureText(text).width > maxWidth && size > 10) {
     size--;
-    ctx.font = `${size}px sans-serif`;
+    ctx.font = `${bold ? 'bold ' : ''}${size}px sans-serif`;
   }
   ctx.fillStyle = "black";
   ctx.fillText(text, x, y);
@@ -985,7 +985,7 @@ function _doGenerateImage() {
 
   drawTextAuto(document.getElementById("machine_ect_text").value, 870, 575, 155, 20);
   drawTextAuto(document.getElementById("site_site_ect_text").value, 290, 945, 1100, 20);
-  drawTextAuto(workEnvEctAutoText, 1235, 870, 270, 20);
+  drawTextAuto(workEnvEctAutoText, 1250, 872, 270, 24, true);
   drawTextAuto(document.getElementById("hot_ect_text").value, 1050, 1165, 120, 20);
   drawTextAuto(document.getElementById("cold_ect_text").value, 1430, 1090, 120, 20);
   drawTextAuto(document.getElementById("site_ect_text").value, 170, 2165, 50, 20);
