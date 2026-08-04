@@ -994,6 +994,7 @@ function _doGenerateImage() {
   }
 
   document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb=>{
+    if (IMAGE_SKIP_CHECK_VALUES.has(cb.value)) return;
     const p = checkPositions[cb.value];
     if(p){
       ctx.font="bold 30px sans-serif";
@@ -1976,16 +1977,14 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
   }
 
   // ── 작업장 환경 → 현장특성 / 위험요인 자동입력 매핑 ──
-  // 건물(옥상)/건물(옥탑)은 현장특성 표에 대응 칸이 없으므로(체크 시 "천정 내 작업" 칸에
-  // 잘못 표시되던 문제) siteChar 자동체크 대신 아래 WORK_ENV_ECT_LABEL로 텍스트만 남긴다.
   const WORK_ENV_AUTO_MAP = {
     'site_roof': {
-      siteChar: null,
+      siteChar: 'site_rooftop_combo',
       risks: ['risk_car_fall','risk_car_fall_1','risk_car_fall_2',
               'risk_electric','risk_electric_1']
     },
     'site_rooftop': {
-      siteChar: null,
+      siteChar: 'site_rooftop_combo',
       risks: ['risk_fall','risk_fall_1','risk_fall_2','risk_fall_3',
               'risk_car_fall','risk_car_fall_1','risk_car_fall_2',
               'risk_electric','risk_electric_1']
@@ -2010,7 +2009,10 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     'site_ect': { siteChar: null, risks: ['risk_electric','risk_electric_1'] }
   };
 
-  // 건물(옥상)/건물(옥탑) 선택 시 현장특성 "현장 특이사항"(기타) 칸에 자동으로 남길 문구
+  // 현장특성 체크박스 중 결과 이미지에 대응 칸이 없는 값 → 체크는 유지하되 이미지에는 그리지 않는다.
+  const IMAGE_SKIP_CHECK_VALUES = new Set(['site_rooftop_combo']);
+
+  // 건물(옥상)/건물(옥탑) 선택 시 현장특성 "현장 특이사항" 칸에 자동으로 남길 문구
   const WORK_ENV_ECT_LABEL = { site_roof: '건물(옥상)', site_rooftop: '건물(옥탑)' };
   let _lastAutoWorkEnvEctText = null;
 
