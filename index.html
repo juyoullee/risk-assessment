@@ -595,7 +595,7 @@ body.show-optional #sign_row{ display:flex; }
     <label><input type="checkbox" value="site_weak_ground" onchange="onSiteCharChange(this)"> 연약지반/비탈면(낙석위험 구간)</label>
     <label><input type="checkbox" value="site_pipe_work" onchange="onSiteCharChange(this)"> 관로작업 구간</label>
     <label><input type="checkbox" value="site_traffic_accident" onchange="onSiteCharChange(this)"> 교통사고 다발지역(TAAS)</label>
-    <label><input type="checkbox" value="site_bridge" onchange="onSiteCharChange(this)"> 교량/지하차도/터널</label>
+    <label><input type="checkbox" value="site_bridge" onchange="onSiteCharChange(this)"> 기타</label>
   </div>
   <div style="margin-top:8px;">
     <label style="font-weight:bold; font-size:13px;">현장 특이 사항
@@ -985,6 +985,7 @@ function _doGenerateImage() {
 
   drawTextAuto(document.getElementById("machine_ect_text").value, 870, 575, 155, 20);
   drawTextAuto(document.getElementById("site_site_ect_text").value, 290, 945, 1100, 20);
+  drawTextAuto(workEnvEctAutoText, 1235, 870, 270, 20);
   drawTextAuto(document.getElementById("hot_ect_text").value, 1050, 1165, 120, 20);
   drawTextAuto(document.getElementById("cold_ect_text").value, 1430, 1090, 120, 20);
   drawTextAuto(document.getElementById("site_ect_text").value, 170, 2165, 50, 20);
@@ -1547,6 +1548,10 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     loadByValues('auto_site_char', SITE_CHAR_VALUES);
 
     loadByValues('auto_work_env', WORK_ENV_VALUES);
+    ['site_roof','site_rooftop'].forEach(v => {
+      const cb = document.querySelector(`input[value="${v}"]`);
+      if (cb && cb.checked) workEnvEctAutoText = WORK_ENV_ECT_LABEL[v];
+    });
     const savedWorkEct = localStorage.getItem('auto_work_env_ect');
     if (savedWorkEct !== null) document.getElementById('site_ect_text').value = savedWorkEct;
     if (document.getElementById('site_ect_cb')?.checked) {
@@ -2012,9 +2017,9 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
   // 현장특성 체크박스 중 결과 이미지에 대응 칸이 없는 값 → 체크는 유지하되 이미지에는 그리지 않는다.
   const IMAGE_SKIP_CHECK_VALUES = new Set(['site_rooftop_combo']);
 
-  // 건물(옥상)/건물(옥탑) 선택 시 현장특성 "현장 특이사항" 칸에 자동으로 남길 문구
+  // 건물(옥상)/건물(옥탑) 선택 시 현장특성 "기타(   )" 칸(site_bridge 위치)에 체크 + 표시할 문구
   const WORK_ENV_ECT_LABEL = { site_roof: '건물(옥상)', site_rooftop: '건물(옥탑)' };
-  let _lastAutoWorkEnvEctText = null;
+  let workEnvEctAutoText = '';
 
   // 부모 위험요인 값 찾기 (자식 value가 주어지면 그 부모 key 반환)
   function findParentRiskVal(childVal) {
@@ -2070,6 +2075,7 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
         const cb = document.querySelector(`input[value="${v}"]`);
         if (cb) cb.checked = false;
       });
+      workEnvEctAutoText = '';
       RISK_VALUES.forEach(v => {
         const cb = document.querySelector(`input[value="${v}"]`);
         if (cb) cb.checked = false;
@@ -2089,26 +2095,6 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
     if (el.value === 'site_ect') {
       document.getElementById('site_etc_wrap').style.display = el.checked ? 'block' : 'none';
       if (!el.checked) document.getElementById('site_ect_text').value = '';
-    }
-
-    // 건물(옥상)/건물(옥탑) → 현장특성 "현장 특이사항" 칸에 문구 자동 표시/해제
-    if (WORK_ENV_ECT_LABEL[el.value]) {
-      const ectField = document.getElementById('site_site_ect_text');
-      if (ectField) {
-        if (el.checked) {
-          const label = WORK_ENV_ECT_LABEL[el.value];
-          const isAuto = !ectField.value || ectField.value === _lastAutoWorkEnvEctText;
-          if (isAuto) {
-            ectField.value = label;
-            _lastAutoWorkEnvEctText = label;
-            onSiteEctInput();
-          }
-        } else if (_lastAutoWorkEnvEctText && ectField.value === _lastAutoWorkEnvEctText) {
-          ectField.value = '';
-          _lastAutoWorkEnvEctText = null;
-          onSiteEctInput();
-        }
-      }
     }
 
     // 현재 체크된 작업장 환경 목록
@@ -2143,6 +2129,19 @@ function toggleChildrenVisible(parentCheckbox, groupClass) {
       if (map && map.siteChar && !neededSiteChars.has(map.siteChar)) {
         const cb = document.querySelector(`input[value="${map.siteChar}"]`);
         if (cb) cb.checked = false;
+      }
+    }
+
+    // 건물(옥상)/건물(옥탑) → 현장특성 "기타(   )" 칸(site_bridge)에 체크 + 문구 자동 표시/해제
+    // (위 라디오형 siteChar 처리 이후에 실행해야 site_bridge 체크가 덮어써지지 않는다)
+    if (WORK_ENV_ECT_LABEL[el.value]) {
+      const bridgeCb = document.querySelector('input[value="site_bridge"]');
+      if (el.checked) {
+        workEnvEctAutoText = WORK_ENV_ECT_LABEL[el.value];
+        if (bridgeCb) bridgeCb.checked = true;
+      } else {
+        workEnvEctAutoText = '';
+        if (bridgeCb) bridgeCb.checked = false;
       }
     }
 
