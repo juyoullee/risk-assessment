@@ -1182,11 +1182,25 @@ function toDatetimeLocal(date) {
     if (typeof generateImage === "function") generateImage();
   }
 
+  // 체감온도 33℃ 이상(폭염특보 기준 충족)이면 작업시간을 20분으로 제한한다.
+  const WORK_DURATION_NORMAL_MS = 2 * 60 * 60 * 1000;
+  const WORK_DURATION_HEATWAVE_MS = 20 * 60 * 1000;
+
+  function getWorkDurationMs() {
+    const apparent = parseFloat(document.getElementById('fake_temperature')?.value);
+    const real = parseFloat(document.getElementById('real_temperature')?.value);
+    const apparentSafe = isNaN(apparent) ? -Infinity : apparent;
+    const realSafe = isNaN(real) ? -Infinity : real;
+    const isHeatwave = typeof HEATWAVE_LEVELS !== 'undefined'
+      && HEATWAVE_LEVELS.some(l => l.match(apparentSafe, realSafe));
+    return isHeatwave ? WORK_DURATION_HEATWAVE_MS : WORK_DURATION_NORMAL_MS;
+  }
+
   function setEndDateFromStart() {
     const startVal = document.getElementById('date')?.value;
     if (!startVal) return;
     const startDate = new Date(startVal);
-    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+    const endDate = new Date(startDate.getTime() + getWorkDurationMs());
     const endInput = document.getElementById('end_date');
     if (endInput) endInput.value = toDatetimeLocal(endDate);
   }
@@ -1202,7 +1216,7 @@ function toDatetimeLocal(date) {
     if (startVal && endInput.value) {
       const startDate = new Date(startVal);
       const endDate = new Date(endInput.value);
-      const maxEnd = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+      const maxEnd = new Date(startDate.getTime() + getWorkDurationMs());
       if (endDate > maxEnd) endInput.value = toDatetimeLocal(maxEnd);
     }
     generateImage();
@@ -1434,6 +1448,7 @@ function toDatetimeLocal(date) {
 
     localStorage.setItem('danger_ect_point', pointEl.value);
     localStorage.setItem('danger_ect_todo', todoEl.value);
+    setEndDateFromStart();
     generateImage();
   }
 
